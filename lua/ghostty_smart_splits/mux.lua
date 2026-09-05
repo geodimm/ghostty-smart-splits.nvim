@@ -48,9 +48,6 @@ function M.perform(action)
 end
 
 function M.next_pane(direction)
-  if require('ghostty_smart_splits.navigation').neighbor_win(direction) then
-    return false
-  end
   return M.perform('goto_split:' .. direction)
 end
 
