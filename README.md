@@ -9,6 +9,8 @@ keep their native Ghostty navigation.
 A macOS bridge for [smart-splits.nvim](https://github.com/mrjones2014/smart-splits.nvim).
 This is an independent plugin, not an official Ghostty or smart-splits backend.
 
+https://github.com/user-attachments/assets/774b72c1-acd5-48fa-9b03-406f2cc740ab
+
 ## Requirements
 
 - Neovim 0.11+ and smart-splits.nvim.
