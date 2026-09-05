@@ -81,6 +81,11 @@ keybind = nvim/ctrl+k=text:\x0b
 keybind = nvim/ctrl+l=text:\x0c
 ```
 
+Ghostty's [`text:` action](https://ghostty.org/docs/config/reference#keybind)
+uses Zig string literal syntax. For another Ctrl key, find its hexadecimal value
+in the [complete C0 control-character table](https://terminfo.dev/fundamentals/control-characters)
+and write it as `text:\xNN`; Ctrl+a through Ctrl+z map to `01` through `1a`.
+
 A copy is in [examples/ghostty.conf](examples/ghostty.conf). On first use, allow
 macOS to automate Ghostty when prompted. If access was denied, review System
 Settings → Privacy & Security → Automation.
