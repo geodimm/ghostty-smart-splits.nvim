@@ -39,3 +39,10 @@ luac.out
 *.x86_64
 *.hex
 
+deps/
+.tmp/
+doc/tags
+*.scpt
+
+# This shared CI configuration must not be hidden by a global Git ignore.
+!.luarc.json
