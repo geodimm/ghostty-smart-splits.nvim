@@ -1,0 +1,1 @@
+# ghostty-splits.nvim
