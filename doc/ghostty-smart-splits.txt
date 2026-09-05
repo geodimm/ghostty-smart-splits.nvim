@@ -1,0 +1,97 @@
+*ghostty-smart-splits.txt*  Neovim-first Ghostty navigation on macOS
+
+==============================================================================
+CONTENTS                                                *ghostty-smart-splits*
+
+  1. Requirements                          |ghostty-smart-splits-requirements|
+  2. Setup                                  |ghostty-smart-splits-setup|
+  3. How it works                          |ghostty-smart-splits-how-it-works|
+  4. API                                    |ghostty-smart-splits-api|
+  5. Limitations                            |ghostty-smart-splits-limitations|
+
+==============================================================================
+1. REQUIREMENTS                           *ghostty-smart-splits-requirements*
+
+Neovim 0.11+, smart-splits.nvim, Ghostty 1.3+ on macOS, and Automation
+permission.
+Run locally, directly in Ghostty; SSH, tmux and Zellij are unsupported.
+Configure Ghostty's nvim key table using examples/ghostty.conf before startup.
+
+==============================================================================
+2. SETUP                                         *ghostty-smart-splits-setup*
+>
+  require('ghostty_smart_splits').setup({
+    key_table = 'nvim',
+    keymaps = {
+      left = '<C-h>', down = '<C-j>', up = '<C-k>', right = '<C-l>',
+    },
+    modes = { 'n', 'v', 't' },
+    smart_splits = {},
+  })
+<
+Call once at startup with this Neovim pane focused and smart-splits loaded.
+setup() configures smart-splits itself. Do not set it up separately as well.
+Returns false on unsupported sessions or if initial terminal lookup fails.
+
+Use keymaps=false to manage mappings yourself. Individual keys can also be
+false. Custom keys/table names require matching Ghostty configuration.
+smart_splits contains options forwarded to smart-splits. The bridge overrides
+multiplexer_integration, disable_multiplexer_nav_when_zoomed and at_edge.
+
+On unsupported sessions, configure ordinary smart-splits navigation yourself.
+
+==============================================================================
+3. HOW IT WORKS                       *ghostty-smart-splits-how-it-works*
+
+Ghostty's performable bindings let Neovim handle Ctrl+h/j/k/l first. The
+plugin moves to a neighboring Neovim window when one exists. At the editor's
+edge, it calls Ghostty's AppleScript API to move to the adjacent pane.
+
+The plugin captures the focused Ghostty terminal when setup runs, activates a
+temporary key table while Neovim is active, and releases it when Neovim is
+suspended or exits. Unsupported platforms and terminals are left unchanged.
+
+==============================================================================
+4. API                                             *ghostty-smart-splits-api*
+
+require('ghostty_smart_splits').move({direction})
+    Move inside Neovim first, then Ghostty. Direction is left/right/up/down.
+    Returns whether a move succeeded. Invalid directions raise an error.
+
+require('ghostty_smart_splits').claim_keys()
+    Push the configured Ghostty key table if not already claimed.
+    Returns whether this instance holds a claim.
+
+require('ghostty_smart_splits').release_keys()
+    Pop one table if claimed. Returns whether the claim has been released.
+    Called automatically on VimSuspend and VimLeavePre.
+    VimEnter and VimResume claim keys again.
+
+:checkhealth ghostty_smart_splits
+    Check prerequisites without sending Apple Events.
+
+==============================================================================
+5. LIMITATIONS                            *ghostty-smart-splits-limitations*
+
+This plugin supports only macOS; there is no Linux/D-Bus implementation.
+AppleScript is synchronous, so crossing an editor edge may have noticeable
+latency. Moving between ordinary Neovim splits does not launch a subprocess.
+
+Initial terminal association depends on focus. Later actions use the captured
+terminal ID and do not silently retarget after focus changes.
+
+Do not stack another Ghostty key table above this one while Neovim is active.
+Cleanup pops the top table because Ghostty cannot remove a table by name. A
+crash cannot clean up, and reloading Ghostty's config can invalidate table
+state. The action deactivate_all_key_tables can recover it, but clears all
+tables.
+
+The custom movement mappings do not implement smart-splits counts, wrapping,
+ignored-buffer rules or split-at-edge behavior.
+
+Native performable:goto_split bindings are enough if Ghostty panes should take
+priority. This plugin is for the opposite order: Neovim first.
+
+See README.md and CONTRIBUTING.md for installation, recovery and verification.
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
