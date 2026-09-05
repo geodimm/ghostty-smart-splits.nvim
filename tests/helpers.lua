@@ -19,7 +19,7 @@ function M.mock()
   end
   package.loaded['smart-splits'] = {
     setup = function(opts)
-      state.config = opts
+      state.config = vim.tbl_deep_extend('force', state.config or {}, opts)
     end,
   }
   vim.fn.has = function(feature)
@@ -41,6 +41,16 @@ function M.mock()
     local response = argv[2]:match('focused%-terminal%-id') and { code = 0, stdout = state.id } or state.response
     return {
       wait = function()
+        if
+          argv[2]:match('perform%-action')
+          and argv[4]
+          and argv[4]:match('^goto_split:')
+          and response.code == 0
+          and vim.trim(response.stdout or '') == 'true'
+          and state.next_id
+        then
+          state.id = state.next_id
+        end
         return response
       end,
     }
@@ -57,11 +67,6 @@ function M.mock()
       package.loaded[name] = loaded[name]
     end
     pcall(vim.api.nvim_del_augroup_by_name, 'GhosttySmartSplits')
-    for _, mode in ipairs({ 'n', 'v', 't' }) do
-      for _, lhs in ipairs({ '<C-h>', '<C-j>', '<C-k>', '<C-l>' }) do
-        pcall(vim.keymap.del, mode, lhs)
-      end
-    end
     vim.cmd('silent! only!')
   end)
   return state

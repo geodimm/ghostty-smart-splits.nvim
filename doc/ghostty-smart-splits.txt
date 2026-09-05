@@ -20,32 +20,35 @@ Configure Ghostty's nvim key table using examples/ghostty.conf before startup.
 ==============================================================================
 2. SETUP                                         *ghostty-smart-splits-setup*
 >
+  local splits = require('smart-splits')
+  splits.setup({}) -- Your existing smart-splits options.
+
   require('ghostty_smart_splits').setup({
     key_table = 'nvim',
-    keymaps = {
-      left = '<C-h>', down = '<C-j>', up = '<C-k>', right = '<C-l>',
-    },
-    modes = { 'n', 'v', 't' },
-    smart_splits = {},
   })
 <
-Call once at startup with this Neovim pane focused and smart-splits loaded.
-setup() configures smart-splits itself. Do not set it up separately as well.
-Returns false on unsupported sessions or if initial terminal lookup fails.
+Configure smart-splits normally, then call this plugin's setup() once at
+startup with the Neovim pane focused. Existing smart-splits options are
+preserved. setup() returns false on unsupported sessions or if the initial
+terminal lookup fails.
 
-Use keymaps=false to manage mappings yourself. Individual keys can also be
-false. Custom keys/table names require matching Ghostty configuration.
-smart_splits contains options forwarded to smart-splits. The bridge overrides
-multiplexer_integration, disable_multiplexer_nav_when_zoomed and at_edge.
+Configure movement mappings through smart-splits. The Neovim movement keys
+must match both sets of Ghostty bindings in examples/ghostty.conf. The example
+uses Ctrl+h/j/k/l. Custom table names also require matching Ghostty
+configuration.
 
-On unsupported sessions, configure ordinary smart-splits navigation yourself.
+The bridge applies multiplexer_integration='ghostty' and at_edge='stop' after
+the existing configuration. Other smart-splits options remain unchanged.
+
+On unsupported sessions, the existing smart-splits configuration is unchanged.
 
 ==============================================================================
 3. HOW IT WORKS                       *ghostty-smart-splits-how-it-works*
 
-Ghostty's performable bindings let Neovim handle Ctrl+h/j/k/l first. The
-plugin moves to a neighboring Neovim window when one exists. At the editor's
-edge, it calls Ghostty's AppleScript API to move to the adjacent pane.
+Ghostty's performable bindings let Neovim handle the configured navigation
+keys first. smart-splits moves to a neighboring Neovim window when one exists.
+At the editor's edge, this plugin calls Ghostty's AppleScript API to move to
+the adjacent pane.
 
 The plugin captures the focused Ghostty terminal when setup runs, activates a
 temporary key table while Neovim is active, and releases it when Neovim is
@@ -53,10 +56,6 @@ suspended or exits. Unsupported platforms and terminals are left unchanged.
 
 ==============================================================================
 4. API                                             *ghostty-smart-splits-api*
-
-require('ghostty_smart_splits').move({direction})
-    Move inside Neovim first, then Ghostty. Direction is left/right/up/down.
-    Returns whether a move succeeded. Invalid directions raise an error.
 
 require('ghostty_smart_splits').claim_keys()
     Push the configured Ghostty key table if not already claimed.
@@ -85,9 +84,6 @@ Cleanup pops the top table because Ghostty cannot remove a table by name. A
 crash cannot clean up, and reloading Ghostty's config can invalidate table
 state. The action deactivate_all_key_tables can recover it, but clears all
 tables.
-
-The custom movement mappings do not implement smart-splits counts, wrapping,
-ignored-buffer rules or split-at-edge behavior.
 
 Native performable:goto_split bindings are enough if Ghostty panes should take
 priority. This plugin is for the opposite order: Neovim first.
