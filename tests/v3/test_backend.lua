@@ -20,7 +20,8 @@ T['configuration and detection have no side effects'] = function()
   eq(pcall(vim.api.nvim_get_autocmds, { group = 'GhosttySmartSplits' }), false)
   eq(backend.move('left'), false)
   eq(backend.resize('left'), false)
-  eq(backend.split('left'), false)
+  eq(backend.move('left', { at_edge = 'split' }), false)
+  eq(backend.split, nil) -- Core dropped `split` from the protocol.
   eq(#state.calls, 0)
   eq(backend.activate(), true)
   wait_for_calls(state, 2)
@@ -54,12 +55,10 @@ T['v3 options use the shared transport and captured terminal'] = function()
   wait_for_calls(state, 2)
   state.id = 'terminal-2'
   for _, direction in ipairs({ 'left', 'right', 'up', 'down' }) do
-    eq(backend.move(direction, { wrap = true, future = true }), true)
+    eq(backend.move(direction, { at_edge = 'stop', future = true }), true)
     eq(vim.list_slice(state.calls[#state.calls], 3), { 'terminal-1', 'goto_split:' .. direction })
     eq(backend.resize(direction, { amount = 4, future = true }), true)
     eq(state.calls[#state.calls][4], 'resize_split:' .. direction .. ',40')
-    eq(backend.split(direction, { future = true }), true)
-    eq(state.calls[#state.calls][4], 'new_split:' .. direction)
   end
   eq(backend.resize('left'), true)
   eq(state.calls[#state.calls][4], 'resize_split:left,30')
@@ -67,9 +66,9 @@ T['v3 options use the shared transport and captured terminal'] = function()
   eq(state.calls[#state.calls][4], 'resize_split:left,30')
   eq(state.system_opts.timeout, 1000)
   state.response = { code = 0, stdout = 'false' }
-  eq(backend.move('left', { wrap = true }), false)
+  eq(backend.move('left', { at_edge = 'wrap' }), false)
   eq(backend.resize('left'), false)
-  eq(backend.split('left'), false)
+  eq(backend.move('left', { at_edge = 'split' }), false)
   state.spawn_error = true
   eq(backend.move('left'), false)
   state.spawn_error = false
@@ -79,8 +78,36 @@ T['v3 options use the shared transport and captured terminal'] = function()
   local count = #state.calls
   eq(backend.move('left'), false)
   eq(backend.resize('left'), false)
-  eq(backend.split('left'), false)
+  eq(backend.move('left', { at_edge = 'split' }), false)
   eq(#state.calls, count)
+end
+
+-- Core hands `at_edge` to the backend and only acts on a false return, so the
+-- Ghostty split has to happen inside move().
+T['at_edge split becomes a Ghostty split and defers to core when it fails'] = function()
+  local state = mock()
+  local backend = require('smart-splits-backend-ghostty')
+  backend.activate()
+  wait_for_calls(state, 2)
+  state.responses = { ['goto_split:right'] = { code = 0, stdout = 'false' } }
+
+  eq(backend.move('right', { at_edge = 'split' }), true)
+  eq(state.calls[#state.calls][4], 'new_split:right')
+
+  -- A move that lands never splits.
+  eq(backend.move('left', { at_edge = 'split' }), true)
+  eq(state.calls[#state.calls][4], 'goto_split:left')
+
+  -- Every other at_edge stays core's business.
+  local count = #state.calls
+  eq(backend.move('right', { at_edge = 'stop' }), false)
+  eq(backend.move('right', { at_edge = 'wrap' }), false)
+  eq(backend.move('right'), false)
+  eq(#state.calls, count + 3)
+
+  -- Ghostty refusing the split returns the fallback to core.
+  state.responses['new_split:right'] = { code = 0, stdout = 'false' }
+  eq(backend.move('right', { at_edge = 'split' }), false)
 end
 
 T['failed activation never follows focus during operations'] = function()
@@ -92,7 +119,7 @@ T['failed activation never follows focus during operations'] = function()
   state.id = 'unrelated-terminal'
   eq(backend.move('right'), false)
   eq(backend.resize('right'), false)
-  eq(backend.split('right'), false)
+  eq(backend.move('right', { at_edge = 'split' }), false)
   eq(#state.calls, 1)
 end
 

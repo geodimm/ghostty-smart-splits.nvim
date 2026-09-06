@@ -1,7 +1,7 @@
 MINITEST_DIR ?= deps/mini.test
 SMART_SPLITS_DIR ?= deps/smart-splits.nvim
 SMART_SPLITS_V3_DIR ?= deps/smart-splits-v3.nvim
-SMART_SPLITS_V3_REF ?= v3
+SMART_SPLITS_V3_REF ?= 2996ec780adda7812a29f1bfc88eee05d2b49c45
 BENCH_ARGS ?=
 NVIM_LOG_FILE ?= /tmp/ghostty-smart-splits-nvim.log
 export NVIM_LOG_FILE
@@ -71,4 +71,5 @@ $(SMART_SPLITS_DIR):
 
 $(SMART_SPLITS_V3_DIR):
 	mkdir -p "$(dir $(SMART_SPLITS_V3_DIR))"
-	git clone --depth=1 --branch "$(SMART_SPLITS_V3_REF)" https://github.com/mrjones2014/smart-splits.nvim "$@"
+	git clone --filter=blob:none --no-checkout https://github.com/mrjones2014/smart-splits.nvim "$@"
+	git -C "$@" checkout --quiet "$(SMART_SPLITS_V3_REF)"
