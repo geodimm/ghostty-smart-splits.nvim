@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/smart-splits-nvim/backend-ghostty/compare/v0.4.1...v0.5.0) (2026-09-06)
+
+
+### Features
+
+* transfer and rename project ([#27](https://github.com/smart-splits-nvim/backend-ghostty/issues/27)) ([18f8222](https://github.com/smart-splits-nvim/backend-ghostty/commit/18f822212473cc2959475b0fccd9a651eaebc5bb))
+
 ## [0.4.1](https://github.com/smart-splits-nvim/backend-ghostty/compare/v0.4.0...v0.4.1) (2026-09-06)
 
 
