@@ -83,6 +83,20 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # busted runs under `nlua`, which makes Neovim the Lua interpreter, so the
+      # rocks tree only has to be ABI-compatible with Neovim's LuaJIT. This runs
+      # before the Neovim setup so that step's PATH changes cannot affect it.
+      - uses: leafo/gh-actions-lua@v11
+        with:
+          luaVersion: luajit-2.1
+
+      - uses: leafo/gh-actions-luarocks@v5
+
+      - name: Install busted
+        run: |
+          luarocks install busted 2.3.0
+          luarocks install nlua 0.3.2
+
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true

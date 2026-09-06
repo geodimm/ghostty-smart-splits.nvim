@@ -126,4 +126,16 @@ function M.activate()
   return attach_and_claim()
 end
 
+---Drop the lifecycle autocommands and every claim. `claim_generation` is
+---bumped rather than zeroed so a `schedule_claim` still on the event loop from
+---before the reset sees a stale generation and does nothing.
+function M.reset()
+  claimed = false
+  active = false
+  claim_generation = claim_generation + 1
+  attach_failures = 0
+  attach_pending = false
+  pcall(vim.api.nvim_del_augroup_by_name, 'GhosttySmartSplits')
+end
+
 return M

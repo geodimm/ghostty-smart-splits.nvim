@@ -1,0 +1,14 @@
+-- One suite per task: each needs a different smart-splits checkout on the
+-- runtimepath, so they cannot share a process. See the Makefile.
+return {
+  _all = {
+    lua = 'nlua',
+    helper = 'tests/init.lua',
+    pattern = '_spec',
+    output = 'gtest',
+  },
+  default = { ROOT = { 'tests' } },
+  core = { ROOT = { 'tests/core' } },
+  v2 = { ROOT = { 'tests/v2' } },
+  v3 = { ROOT = { 'tests/v3' } },
+}

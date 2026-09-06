@@ -117,6 +117,15 @@ function M.request(request)
   return response.result, true
 end
 
+---Return the bridge to its initial state, including the fields `stop()` keeps
+---so `status()` stays meaningful across a restart. Tests call this instead of
+---dropping the module from `package.loaded`.
+function M.reset()
+  M.stop()
+  last_exit = nil
+  in_flight = false
+end
+
 function M.status()
   return {
     executable = vim.fn.executable(binary_path) == 1,

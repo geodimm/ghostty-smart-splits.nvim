@@ -1,18 +1,33 @@
 # Development
 
-The local toolchain is Neovim 0.11 or newer, StyLua, LuaLS, Luacheck, and Make.
-On macOS:
+The local toolchain is Neovim 0.11 or newer, StyLua, LuaLS, Make, and a Lua 5.1
+rocks tree holding Luacheck, busted and nlua. Everything is pinned to the
+versions CI uses.
+
+On macOS, copy and paste the whole block:
 
 ```sh
 brew install neovim stylua lua-language-server luajit luarocks
 LUAJIT_PREFIX="$(brew --prefix luajit)"
-luarocks --lua-version=5.1 --lua-dir="$LUAJIT_PREFIX" --local install luacheck 1.2.0-1
-eval "$(luarocks --lua-version=5.1 --lua-dir="$LUAJIT_PREFIX" --local path)"
+ROCKS=(--lua-version=5.1 --lua-dir="$LUAJIT_PREFIX" --local)
+luarocks "${ROCKS[@]}" install luacheck 1.2.0-1
+luarocks "${ROCKS[@]}" install busted 2.3.0
+luarocks "${ROCKS[@]}" install nlua 0.3.2
+eval "$(luarocks "${ROCKS[@]}" path --bin)"
 ```
 
-The `lint` and `typecheck` Make targets load this LuaRocks environment
-automatically when Homebrew and LuaRocks are available. Linux CI skips that
-optional setup and uses its installed standalone tools.
+Elsewhere, install Neovim, StyLua, LuaLS and LuaRocks from your package manager
+or their releases, plus a Lua 5.1 install for LuaRocks to build against. On
+Debian and Ubuntu that is:
+
+```sh
+sudo apt install make luarocks lua5.1 liblua5.1-0-dev
+ROCKS=(--lua-version=5.1 --lua-dir=/usr --local)
+luarocks "${ROCKS[@]}" install luacheck 1.2.0-1
+luarocks "${ROCKS[@]}" install busted 2.3.0
+luarocks "${ROCKS[@]}" install nlua 0.3.2
+eval "$(luarocks "${ROCKS[@]}" path --bin)"
+```
 
 Run the complete check with `make check`. Individual targets are `make format`,
 `make format-check`, `make lint`, `make typecheck`, and `make test`.
@@ -23,22 +38,30 @@ Run the complete check with `make check`. Individual targets are `make format`,
 | `make test-v2` | `tests/v2/` | V2 setup, legacy import warnings, mux discovery, and action forwarding through the real v2 core. |
 | `make test-v3` | `tests/v3/` | V3 backend contract, shared state with the v2 entry point, selection, navigation, resizing, and fallback through the real v3 core. |
 
-`make test` and `make check` run all three suites in separate Neovim processes.
-Each suite prints its scope and its own case/failure counts. CI exposes them as
-three named steps on each platform and Neovim version.
+`make test` and `make check` run all three suites in separate busted processes,
+because each needs a different smart-splits checkout on the runtimepath.
 
-Tests use [mini.test](https://github.com/nvim-mini/mini.test) and
-[smart-splits.nvim](https://github.com/mrjones2014/smart-splits.nvim). The first
-`make test` downloads mini.test and separate smart-splits checkouts for master
-(v2) and the experimental v3 branch into the ignored `deps/` directory. They
-are development-only dependencies. Override `SMART_SPLITS_DIR` or
-`SMART_SPLITS_V3_DIR` to test against existing checkouts; `SMART_SPLITS_V3_REF`
-selects the branch or tag when downloading a new v3 checkout.
+Each case is named as it runs, with its file, line and duration. Pass other
+busted flags through `BUSTED_ARGS`, for example `make test BUSTED_ARGS="-o TAP"`
+for one line per case, `-o plainTerminal` for dots, or `-l` to list case names
+without running them.
 
-The shared suite needs only mini.test. All suites mock AppleScript and platform
-checks; the shared health test also stubs smart-splits availability. The v2 and
-v3 `test_smart_splits.lua` files exercise the actual upstream code and real
-Neovim windows. No automated suite moves live Ghostty panes or requires macOS.
+Run a single suite with `make test-core`, or one spec with
+`busted --run=core tests/core/bridge_spec.lua`, and filter cases with
+`make test-core BUSTED_ARGS=--filter=bridge`.
+
+The upstream [smart-splits.nvim](https://github.com/mrjones2014/smart-splits.nvim)
+checkouts for master (v2) and the experimental v3 branch are downloaded into the
+ignored `deps/` directory on first run, as development-only dependencies.
+Override `SMART_SPLITS_DIR` or `SMART_SPLITS_V3_DIR` to test against existing
+checkouts; `SMART_SPLITS_V3_REF` selects the branch or tag when downloading a
+new v3 checkout.
+
+The shared suite needs no upstream checkout. All suites mock AppleScript and
+platform checks; the shared health spec also stubs smart-splits availability.
+The v2 and v3 `smart_splits_spec.lua` files exercise the actual upstream code
+and real Neovim windows. No automated suite moves live Ghostty panes or
+requires macOS.
 
 ## AppleScript
 
@@ -124,8 +147,7 @@ To exercise the pull-request workflow locally, start Docker and install
 
 ```sh
 brew install act
-act pull_request -W .github/workflows/ci.yaml \
-  -s GITHUB_TOKEN="$(gh auth token)"
+act pull_request -W .github/workflows/ci.yaml -s GITHUB_TOKEN="$(gh auth token)"
 ```
 
 CI runs tests on Linux and macOS with Neovim 0.11, stable, and nightly. It also

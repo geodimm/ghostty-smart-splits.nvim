@@ -139,6 +139,13 @@ function M.perform(action)
   ) == 'true'
 end
 
+---Forget the captured terminal and any attachment in flight.
+function M.reset()
+  terminal_id = nil
+  attaching = false
+  attach_callbacks = {}
+end
+
 function M.move(direction)
   return M.perform('goto_split:' .. direction)
 end
