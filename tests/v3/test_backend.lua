@@ -28,6 +28,18 @@ T['configuration and detection have no side effects'] = function()
   eq(state.config, nil)
 end
 
+T['slow threshold follows bridge mode and supports an override'] = function()
+  mock()
+  local backend = require('smart-splits-backend-ghostty')
+  eq(backend.slow_threshold, 150)
+  backend.setup({ bridge = true })
+  eq(backend.slow_threshold, 100)
+  backend.setup({ bridge = false })
+  eq(backend.slow_threshold, 150)
+  backend.setup({ slow_threshold = 250 })
+  eq(backend.slow_threshold, 250)
+end
+
 T['v3 loads independently of the v2 adapter'] = function()
   mock()
   require('smart-splits-backend-ghostty').activate()
