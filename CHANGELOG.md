@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/geodimm/ghostty-smart-splits.nvim/compare/v0.2.0...v0.3.0) (2026-09-06)
+
+
+### Features
+
+* add optional Ghostty bridge transport ([#10](https://github.com/geodimm/ghostty-smart-splits.nvim/issues/10)) ([385c90c](https://github.com/geodimm/ghostty-smart-splits.nvim/commit/385c90c85193d03f4b04c7efc2c64dd36f1c4d50))
+
 ## [0.2.0](https://github.com/geodimm/ghostty-smart-splits.nvim/compare/v0.1.0...v0.2.0) (2026-09-06)
 
 
