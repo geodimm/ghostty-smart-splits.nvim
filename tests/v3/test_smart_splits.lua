@@ -11,7 +11,7 @@ local function setup(opts)
   local state = require('tests.helpers').mock()
   package.loaded['smart-splits'] = nil
   local splits = require('smart-splits')
-  eq(splits.PROTOCOL_VERSION, 3)
+  eq(splits.PROTOCOL_VERSION, vim.version.parse('3.0.0'))
   splits.setup(vim.tbl_deep_extend('force', {
     mux = { backend = 'smart-splits-backend-ghostty' },
     move = { at_edge = 'stop' },
@@ -76,7 +76,7 @@ T['an unselected backend can be configured without claiming keys'] = function()
   package.loaded['smart-splits'] = nil
   local preferred = {
     name = 'preferred',
-    protocol_version = 3,
+    protocol_version = '3.0.0',
     detect = function()
       return true
     end,

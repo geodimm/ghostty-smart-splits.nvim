@@ -4,7 +4,7 @@ local ghostty = require('ghostty-smart-splits.ghostty')
 local session = require('ghostty-smart-splits.session')
 local M = {
   name = 'ghostty',
-  protocol_version = 3,
+  protocol_version = '3.0.0',
   slow_threshold = config.slow_threshold,
 }
 
