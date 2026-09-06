@@ -147,6 +147,22 @@ Settings → Privacy & Security → Automation.
 The navigation keys configured in Neovim must match both sets of Ghostty
 bindings. The example uses Ctrl+h/j/k/l.
 
+If you also bind Alt+h/j/k/l to Ghostty's `resize_split` actions, forward them
+in the `nvim` table so smart-splits can resize editor windows first:
+
+```ini
+keybind = nvim/alt+h=esc:h
+keybind = nvim/alt+j=esc:j
+keybind = nvim/alt+k=esc:k
+keybind = nvim/alt+l=esc:l
+```
+
+Map `<A-h/j/k/l>` to smart-splits' resize functions in Neovim. Without these
+table entries, a native `performable:` resize binding consumes the key when a
+Ghostty pane can be resized, bypassing Neovim. The full optional resize bindings
+are in [examples/ghostty.conf](examples/ghostty.conf). After changing the table,
+exit Neovim, reload Ghostty's config, then start Neovim again with its pane focused.
+
 The table is pushed on startup/resume and popped on suspend/exit. This keeps
 Neovim's keys local to its Ghostty terminal; it does not reconfigure other panes.
 
