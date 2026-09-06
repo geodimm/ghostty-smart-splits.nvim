@@ -29,8 +29,8 @@ test-e2e: bridge $(SMART_SPLITS_DIR) $(SMART_SPLITS_V3_DIR)
 	SMART_SPLITS_DIR="$(abspath $(SMART_SPLITS_DIR))" SMART_SPLITS_V3_DIR="$(abspath $(SMART_SPLITS_V3_DIR))" \
 		nvim --headless -u NONE -i NONE -l tests/e2e/run.lua
 
-# Local only: moves real Ghostty panes. Deliberately excluded from check/CI.
-bench:
+# Local only: benchmarks real transports in a dedicated Ghostty instance.
+bench: bridge
 	nvim --headless -u NONE -i NONE -l tests/bench/run.lua $(BENCH_ARGS)
 
 bridge: bin/ghostty-smart-splits-bridge

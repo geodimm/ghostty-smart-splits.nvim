@@ -9,9 +9,14 @@ function run(argv) {
   var alive = !running.isNil() && !running.terminated;
   if (operation === 'running') return alive;
   if (!alive) throw Error('Test Ghostty process is no longer running');
+  function configuration(command) {
+    var fields = D.recordDescriptor;
+    fields.setDescriptorForKeyword(D.descriptorWithString(command), code('GScC'));
+    return send(pid, 'Ghst', 'NSCf', { 'GScS': fields });
+  }
   if (operation === 'quit') { send(pid, 'aevt', 'quit'); return; }
   if (operation === 'new') {
-    var win = send(pid, 'Ghst', 'NWin');
+    var win = send(pid, 'Ghst', 'NWin', argv[3] ? { 'GNwS': configuration(argv[3]) } : {});
     return ObjC.unwrap(send(pid, 'core', 'getd', {
       '----': prop('ID  ', prop('GTfT', prop('GWsT', win)))
     }).stringValue);
@@ -23,9 +28,11 @@ function run(argv) {
   }
   var term = terminal(argv[3]);
   if (operation === 'split') {
-    var created = send(pid, 'Ghst', 'Splt', {
+    var params = {
       '----': term, 'GSpd': D.descriptorWithEnumCode(code('GSrt'))
-    });
+    };
+    if (argv[4]) params.GSpS = configuration(argv[4]);
+    var created = send(pid, 'Ghst', 'Splt', params);
     return ObjC.unwrap(send(pid, 'core', 'getd', { '----': prop('ID  ', created) }).stringValue);
   }
   if (operation === 'focus') { send(pid, 'Ghst', 'Fcus', { '----': term }); return; }
