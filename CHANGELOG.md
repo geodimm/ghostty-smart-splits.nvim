@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/geodimm/ghostty-smart-splits.nvim/compare/v0.3.1...v0.4.0) (2026-09-06)
+
+
+### Features
+
+* configure v3 slow operation threshold ([#14](https://github.com/geodimm/ghostty-smart-splits.nvim/issues/14)) ([3895823](https://github.com/geodimm/ghostty-smart-splits.nvim/commit/389582322f760ba19936547f2a4737de401d5b41))
+
 ## [0.3.1](https://github.com/geodimm/ghostty-smart-splits.nvim/compare/v0.3.0...v0.3.1) (2026-09-06)
 
 
