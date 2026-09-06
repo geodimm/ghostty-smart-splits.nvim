@@ -76,9 +76,24 @@ local function run_async(script, callback, ...)
   return process ~= nil
 end
 
+-- Prefer the persistent bridge; fall back to osascript when it cannot answer.
+-- A bridge that reports an AppleScript failure fails closed rather than retrying.
+local function dispatch(request, script, ...)
+  if config.get_bridge() then
+    local result, handled = bridge.request(request)
+    if handled then
+      return type(result) == 'string' and result or nil
+    end
+  end
+  return run(script, ...)
+end
+
 function M.focused_terminal_id()
-  local id = run('focused-terminal-id')
-  return id and id ~= '' and id or nil
+  if not M.detect() then
+    return nil
+  end
+  local id = dispatch({ command = 'focused-terminal-id' }, 'focused-terminal-id')
+  return id ~= '' and id or nil
 end
 
 -- Capture once. Actions must not follow focus into an unrelated terminal.
@@ -120,13 +135,12 @@ function M.perform(action)
   if not terminal_id or not M.detect() then
     return false
   end
-  if config.get_bridge() then
-    local result, handled = bridge.request({ command = 'perform', terminalID = terminal_id, action = action })
-    if handled then
-      return result == 'true'
-    end
-  end
-  return run('perform-action', terminal_id, action) == 'true'
+  return dispatch(
+    { command = 'perform', terminalID = terminal_id, action = action },
+    'perform-action',
+    terminal_id,
+    action
+  ) == 'true'
 end
 
 function M.move(direction)

@@ -31,4 +31,28 @@ T['real smart-splits loads the backend and forwards actions'] = function()
   eq(state.calls[#state.calls][4], 'new_split:down')
 end
 
+-- v2 brackets every move with a pane lookup, so all three round trips must take
+-- the bridge; routing only the action left two osascript spawns per keypress.
+T['an edge move over the bridge never spawns osascript'] = function()
+  local state = require('tests.helpers').mock()
+  state.bridge_available = true
+  package.loaded['smart-splits'] = nil
+  local splits = require('smart-splits')
+  splits.setup({})
+  eq(require('ghostty-smart-splits').setup({ bridge = true }), true)
+  wait_for_calls(state, 1) -- Attachment is the one osascript call.
+  vim.wait(20, function()
+    return false
+  end)
+
+  local spawns, requests = #state.calls, #state.bridge_requests
+  state.next_id = 'terminal-2'
+  splits.move_cursor_right()
+  eq(#state.calls, spawns)
+  local commands = vim.tbl_map(function(request)
+    return request.command
+  end, vim.list_slice(state.bridge_requests, requests + 1))
+  eq(commands, { 'focused-terminal-id', 'perform', 'focused-terminal-id' })
+end
+
 return T

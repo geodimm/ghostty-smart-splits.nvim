@@ -99,4 +99,32 @@ T['enabled bridge falls back when missing or unable to start'] = function()
   eq(state.calls[#state.calls][4], 'goto_split:right')
 end
 
+T['the focused terminal lookup prefers the bridge and falls back to osascript'] = function()
+  local state = mock()
+  state.bridge_available = true
+  local bridge = require('ghostty-smart-splits.bridge')
+  local config = require('ghostty-smart-splits.config')
+  local ghostty = require('ghostty-smart-splits.ghostty')
+
+  config.setup({ bridge = true })
+  state.id = 'terminal-7'
+  eq(ghostty.focused_terminal_id(), 'terminal-7')
+  eq(#state.calls, 0)
+  eq(state.bridge_requests, { { command = 'focused-terminal-id' } })
+
+  -- A bridge that cannot start still answers through osascript.
+  bridge.stop()
+  state.bridge_available = false
+  eq(ghostty.focused_terminal_id(), 'terminal-7')
+  eq(#state.bridge_requests, 1)
+  eq(state.calls[#state.calls][2]:match('[^/]+$'), 'focused-terminal-id.applescript')
+
+  -- A disabled bridge is never consulted.
+  state.bridge_available = true
+  config.setup({ bridge = false })
+  eq(ghostty.focused_terminal_id(), 'terminal-7')
+  eq(#state.bridge_requests, 1)
+  eq(#state.calls, 2)
+end
+
 return T

@@ -84,7 +84,19 @@ function M.mock()
   vim.fn.chansend = function(job, data)
     local request = vim.json.decode(data)
     table.insert(state.bridge_requests, request)
-    local response = state.bridge_response or { ok = true, result = 'true' }
+    local response = state.bridge_response
+      or (request.command == 'focused-terminal-id' and { ok = true, result = state.id })
+      or { ok = true, result = 'true' }
+    -- Mirror the osascript mock: a successful move lands in the next terminal.
+    if
+      request.command == 'perform'
+      and (request.action or ''):match('^goto_split:')
+      and response.ok
+      and response.result == 'true'
+      and state.next_id
+    then
+      state.id = state.next_id
+    end
     bridge_callbacks.on_stdout(job, { vim.json.encode(response), '' })
     return #data
   end

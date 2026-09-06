@@ -140,7 +140,7 @@ Both integrations accept the same backend options:
 | Option | Default | Behavior |
 | --- | --- | --- |
 | `key_table` | `'nvim'` | Ghostty key table used while Neovim is active. |
-| `bridge` | `false` | Use a persistent bridge for actions; fall back to `osascript` when unavailable. Set `false` to use only `osascript`. |
+| `bridge` | `false` | Use a persistent bridge for actions and pane lookups; fall back to `osascript` when unavailable. Set `false` to use only `osascript`. |
 | `slow_threshold` | `100` with the bridge, `150` without | Milliseconds before smart-splits v3 logs a slow-operation warning. Must be a positive integer. |
 
 With v2, pass them to the plugin setup:
@@ -185,7 +185,8 @@ If your machine is slower and you are comfortable with the latency, increase
 
 ### Optional bridge
 
-The bridge is a persistent Swift process that reuses compiled AppleScript to reduce the overhead of sending actions to Ghostty.
+The bridge is a persistent Swift process that reuses compiled AppleScript to reduce the overhead of talking to Ghostty.
+Every request goes through it, including the pane lookups smart-splits v2 makes before and after each move.
 
 If navigation feels slow, try enabling the bridge. With Xcode Command Line Tools installed,
 run this from the plugin directory, then set `bridge = true`:
