@@ -165,7 +165,7 @@ require('smart-splits').setup({
 ```
 
 Each setup call resets omitted options to their defaults. Disabling the bridge
-stops an existing worker immediately; enabling it starts one on the next
+stops an existing bridge immediately; enabling it starts one on the next
 attachment or action. Changing this option does not release the active key table.
 
 Configure movement and resize mappings through smart-splits. The v2 setup adds
@@ -233,9 +233,9 @@ Run `:checkhealth ghostty-smart-splits` for local prerequisites. With v3,
 
 ## Limitations
 
-- macOS only. AppleScript calls are synchronous and time out after one second.
-- The initial Ghostty terminal comes from the focused pane; later actions keep
-  using that terminal instead of following focus changes.
+- macOS only. Action AppleScript calls are synchronous and time out after one second
+- The initial Ghostty terminal comes from the focused pane and the lookup is asynchronous;
+  Later actions keep using that terminal instead of following focus changes.
 - Do not stack another Ghostty key table above this one while Neovim is active.
   If a crash or config reload leaves stale state, Ghostty's
   `deactivate_all_key_tables` action can recover it, but clears every table.

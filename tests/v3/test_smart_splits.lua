@@ -1,6 +1,12 @@
 local T = require('mini.test').new_set()
 local eq = require('mini.test').expect.equality
 
+local function wait_for_calls(state, count)
+  assert(vim.wait(100, function()
+    return #state.calls >= count
+  end, 1))
+end
+
 local function setup(opts)
   local state = require('tests.helpers').mock()
   package.loaded['smart-splits'] = nil
@@ -11,6 +17,7 @@ local function setup(opts)
     move = { at_edge = 'stop' },
     log = { file = false },
   }, opts or {}))
+  wait_for_calls(state, 2)
   return state, splits
 end
 
@@ -28,7 +35,9 @@ T['core selects and activates the backend without changing user options'] = func
   eq(state.calls[#state.calls][4], 'resize_split:down,70')
   vim.api.nvim_exec_autocmds('VimSuspend', {})
   eq(state.calls[#state.calls][4], 'deactivate_key_table')
+  local count = #state.calls
   vim.api.nvim_exec_autocmds('VimResume', {})
+  wait_for_calls(state, count + 1)
   eq(state.calls[#state.calls][4], 'activate_key_table:nvim')
 end
 

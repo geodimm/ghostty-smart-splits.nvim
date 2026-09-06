@@ -3,6 +3,12 @@ local T = MiniTest.new_set()
 local eq = MiniTest.expect.equality
 local mock = require('tests.helpers').mock
 
+local function wait_for_calls(state, count)
+  assert(vim.wait(100, function()
+    return #state.calls >= count
+  end, 1))
+end
+
 T['configuration and detection have no side effects'] = function()
   local state = mock()
   local backend = require('smart-splits-backend-ghostty')
@@ -17,6 +23,7 @@ T['configuration and detection have no side effects'] = function()
   eq(backend.split('left'), false)
   eq(#state.calls, 0)
   eq(backend.activate(), true)
+  wait_for_calls(state, 2)
   eq(state.calls[#state.calls][4], 'activate_key_table:editor')
   eq(state.config, nil)
 end
@@ -32,6 +39,7 @@ T['v3 options use the shared transport and captured terminal'] = function()
   local state = mock()
   local backend = require('smart-splits-backend-ghostty')
   backend.activate()
+  wait_for_calls(state, 2)
   state.id = 'terminal-2'
   for _, direction in ipairs({ 'left', 'right', 'up', 'down' }) do
     eq(backend.move(direction, { wrap = true, future = true }), true)
@@ -67,7 +75,8 @@ T['failed activation never follows focus during operations'] = function()
   local state = mock()
   local backend = require('smart-splits-backend-ghostty')
   state.id = ''
-  eq(backend.activate(), false)
+  eq(backend.activate(), true)
+  wait_for_calls(state, 1)
   state.id = 'unrelated-terminal'
   eq(backend.move('right'), false)
   eq(backend.resize('right'), false)
@@ -83,14 +92,16 @@ T['both module names and interfaces share key-table ownership'] = function()
   legacy.setup()
   local backend = require('smart-splits-backend-ghostty')
   backend.activate()
-  eq(#state.calls, 2)
+  wait_for_calls(state, 2)
   for _ = 1, 2 do
     vim.api.nvim_exec_autocmds('VimEnter', {})
     eq(#state.calls, 2 + (_ - 1) * 2)
     state.id = 'unrelated-terminal'
     vim.api.nvim_exec_autocmds('VimSuspend', {})
     eq(vim.list_slice(state.calls[#state.calls], 3), { 'terminal-1', 'deactivate_key_table' })
+    local count = #state.calls
     vim.api.nvim_exec_autocmds('VimResume', {})
+    wait_for_calls(state, count + 1)
     eq(vim.list_slice(state.calls[#state.calls], 3), { 'terminal-1', 'activate_key_table:nvim' })
   end
   vim.api.nvim_exec_autocmds('VimLeavePre', {})
