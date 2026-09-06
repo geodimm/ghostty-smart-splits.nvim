@@ -1,10 +1,10 @@
-# ghostty-smart-splits.nvim
+# backend-ghostty
 
 Navigate between Neovim splits and Ghostty panes on macOS with the same keys.
 smart-splits handles Neovim windows first; at an editor edge, the matching
 Ghostty binding handles the pane.
 
-A macOS bridge for [smart-splits.nvim](https://github.com/mrjones2014/smart-splits.nvim).
+A macOS bridge for [smart-splits.nvim](https://github.com/smart-splits-nvim/smart-splits.nvim).
 
 Supports smart-splits v2 and the experimental v3 backend.
 
@@ -23,9 +23,9 @@ With lazy.nvim:
 
 ```lua
 {
-  'mrjones2014/smart-splits.nvim',
+  'smart-splits-nvim/smart-splits.nvim',
   lazy = false,
-  dependencies = { 'geodimm/ghostty-smart-splits.nvim' },
+  dependencies = { 'smart-splits-nvim/backend-ghostty' },
   config = function()
     require('smart-splits').setup({}) -- Your existing options and mappings.
     require('ghostty-smart-splits').setup()
@@ -37,8 +37,8 @@ With `vim.pack` (Neovim 0.12+):
 
 ```lua
 vim.pack.add({
-  'https://github.com/mrjones2014/smart-splits.nvim',
-  'https://github.com/geodimm/ghostty-smart-splits.nvim',
+  'https://github.com/smart-splits-nvim/smart-splits.nvim',
+  'https://github.com/smart-splits-nvim/backend-ghostty',
 })
 
 require('smart-splits').setup({}) -- Your existing options and mappings.
@@ -47,19 +47,19 @@ require('ghostty-smart-splits').setup()
 
 ### smart-splits v3 (experimental)
 
-Use smart-splits' `v3` branch. The protocol and backend may change before
+Use smart-splits' `v3` Git ref. The protocol and backend may change before
 release.
 
 With lazy.nvim:
 
 ```lua
 {
-  'mrjones2014/smart-splits.nvim',
+  'smart-splits-nvim/smart-splits.nvim',
   branch = 'v3',
   lazy = false,
   dependencies = {
     {
-      'geodimm/ghostty-smart-splits.nvim',
+      'smart-splits-nvim/backend-ghostty',
       main = 'smart-splits-backend-ghostty',
     },
   },
@@ -79,10 +79,10 @@ With `vim.pack` (Neovim 0.12+):
 ```lua
 vim.pack.add({
   {
-    src = 'https://github.com/mrjones2014/smart-splits.nvim',
+    src = 'https://github.com/smart-splits-nvim/smart-splits.nvim',
     version = 'v3',
   },
-  'https://github.com/geodimm/ghostty-smart-splits.nvim',
+  'https://github.com/smart-splits-nvim/backend-ghostty',
 })
 
 require('smart-splits').setup({
@@ -204,7 +204,7 @@ make bridge
 To rebuild on install/update with lazy.nvim, use this dependency spec:
 
 ```lua
-{ 'geodimm/ghostty-smart-splits.nvim', build = 'make bridge' }
+{ 'smart-splits-nvim/backend-ghostty', build = 'make bridge' }
 ```
 
 With vim.pack, register this hook before `vim.pack.add()`:
@@ -213,7 +213,7 @@ With vim.pack, register this hook before `vim.pack.add()`:
 vim.api.nvim_create_autocmd('PackChanged', {
   callback = function(ev)
     local d = ev.data
-    if d.spec.name == 'ghostty-smart-splits.nvim'
+    if d.spec.name == 'backend-ghostty'
       and (d.kind == 'install' or d.kind == 'update') then
       local r = vim.system({ 'make', 'bridge' }, { cwd = d.path, text = true }):wait()
       assert(r.code == 0, r.stderr or 'bridge build failed')

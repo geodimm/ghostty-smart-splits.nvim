@@ -34,7 +34,7 @@ continue asynchronously after setup.
 
 SMART-SPLITS V3 (EXPERIMENTAL)
 
-Use smart-splits.nvim's `v3` branch and select the backend:
+Use smart-splits.nvim's `v3` Git ref and select the backend:
 >
   require('smart-splits').setup({
     mux = { backend = 'smart-splits-backend-ghostty' },
