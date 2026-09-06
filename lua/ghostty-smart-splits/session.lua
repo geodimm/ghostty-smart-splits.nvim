@@ -5,6 +5,11 @@ local ghostty = require('ghostty-smart-splits.ghostty')
 local claimed = false
 local active = false
 local claim_generation = 0
+local attach_failures = 0
+local attach_pending = false
+-- Enough to outlast a permission prompt without pestering a Mac that will
+-- never answer; each retry costs one osascript spawn.
+local max_attach_failures = 5
 
 ---@param opts? GhosttySmartSplitsConfig
 function M.configure(opts)
@@ -43,19 +48,61 @@ local function schedule_claim()
   end)
 end
 
+local function give_up()
+  active = false
+  pcall(vim.api.nvim_del_augroup_by_name, 'GhosttySmartSplits')
+  vim.notify_once(
+    'ghostty-smart-splits: could not reach Ghostty; see :checkhealth ghostty-smart-splits',
+    vim.log.levels.WARN
+  )
+end
+
+-- Attaching when already attached just re-claims, so this is also the handler
+-- for the lifecycle events. ghostty.attach() coalesces concurrent requests and
+-- answers every queued callback from the one lookup, so skip while a lookup is
+-- in flight rather than counting its single failure once per caller.
+local function attach_and_claim()
+  if attach_pending then
+    return true
+  end
+  attach_pending = true
+  return ghostty.attach(function(attached)
+    attach_pending = false
+    if not active then
+      return
+    end
+    if attached then
+      attach_failures = 0
+      schedule_claim()
+      return
+    end
+    attach_failures = attach_failures + 1
+    if attach_failures >= max_attach_failures then
+      give_up()
+    end
+  end)
+end
+
 function M.activate()
   if not ghostty.detect() then
     return false
   end
   active = true
+  attach_failures = 0
+  attach_pending = false
   local group = vim.api.nvim_create_augroup('GhosttySmartSplits', { clear = true })
-  vim.api.nvim_create_autocmd({ 'VimEnter', 'VimResume' }, {
+  -- The first Apple Event raises the macOS Automation prompt, which times out
+  -- while the dialog waits to be answered, and Ghostty may not be scriptable
+  -- yet at startup. Both clear up on their own, so retry on FocusGained: it is
+  -- when the user has finished with the dialog, and it is proof that the pane
+  -- about to be captured is ours rather than one focus wandered to.
+  vim.api.nvim_create_autocmd({ 'VimEnter', 'VimResume', 'FocusGained' }, {
     group = group,
     callback = function(ev)
       if ev.event == 'VimResume' then
         active = true
       end
-      schedule_claim()
+      attach_and_claim()
     end,
   })
   vim.api.nvim_create_autocmd('VimSuspend', {
@@ -72,17 +119,7 @@ function M.activate()
       bridge.stop()
     end,
   })
-  return ghostty.attach(function(attached)
-    if not active then
-      return
-    end
-    if attached then
-      schedule_claim()
-    else
-      active = false
-      pcall(vim.api.nvim_del_augroup_by_name, 'GhosttySmartSplits')
-    end
-  end)
+  return attach_and_claim()
 end
 
 return M
