@@ -105,9 +105,13 @@ function M.activate()
       attach_and_claim()
     end,
   })
+  -- Clearing `active` is what makes the VimResume branch above matter: an
+  -- attach still in flight when Neovim is suspended would otherwise claim the
+  -- key table behind a user who has gone back to their shell.
   vim.api.nvim_create_autocmd('VimSuspend', {
     group = group,
     callback = function()
+      active = false
       M.release_keys()
     end,
   })

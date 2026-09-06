@@ -16,30 +16,6 @@ function M.detect()
     and not vim.env.ZELLIJ
 end
 
-local function run(script, ...)
-  if not M.detect() then
-    return nil
-  end
-  local argv = { 'osascript', script_dir .. script .. '.applescript', ... }
-  local ok, result = pcall(function()
-    return vim.system(argv, { text = true, timeout = 1000 }):wait()
-  end)
-  if not ok then
-    result = { code = -1, signal = 0, stderr = tostring(result) }
-  end
-  if result.code ~= 0 then
-    local message = vim.trim(result.stderr or '')
-    vim.schedule(function()
-      vim.notify_once(
-        'ghostty-smart-splits: ' .. (message ~= '' and message or 'AppleScript failed'),
-        vim.log.levels.WARN
-      )
-    end)
-    return nil
-  end
-  return vim.trim(result.stdout or '')
-end
-
 local function report_error(result)
   local message = vim.trim(result.stderr or '')
   vim.schedule(function()
@@ -50,14 +26,34 @@ local function report_error(result)
   end)
 end
 
+local function run(script, ...)
+  if not M.detect() then
+    return nil
+  end
+  local argv = { 'osascript', script_dir .. script .. '.applescript', ... }
+  local ok, result = pcall(function()
+    return vim.system(argv, { text = true, timeout = 1000 }):wait()
+  end)
+  -- :wait() is typed as always returning a result, but it has been seen to
+  -- return nil, which would turn a timeout into an indexing error.
+  if not ok or type(result) ~= 'table' then
+    result = { code = -1, signal = 0, stderr = ok and '' or tostring(result) }
+  end
+  if result.code ~= 0 then
+    report_error(result)
+    return nil
+  end
+  return vim.trim(result.stdout or '')
+end
+
 local function run_async(script, callback, ...)
   if not M.detect() then
     callback(nil)
     return false
   end
   local argv = { 'osascript', script_dir .. script .. '.applescript', ... }
-  local ok, process = pcall(function()
-    return vim.system(argv, { text = true, timeout = 1000 }, function(result)
+  local ok, err = pcall(function()
+    vim.system(argv, { text = true, timeout = 1000 }, function(result)
       vim.schedule(function()
         if result.code ~= 0 then
           report_error(result)
@@ -69,11 +65,11 @@ local function run_async(script, callback, ...)
     end)
   end)
   if not ok then
-    report_error({ stderr = tostring(process) })
+    report_error({ stderr = tostring(err) })
     callback(nil)
     return false
   end
-  return process ~= nil
+  return true
 end
 
 -- Prefer the persistent bridge; fall back to osascript when it cannot answer.

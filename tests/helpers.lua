@@ -75,6 +75,7 @@ function M.mock()
     assert(argv[1]:match('ghostty%-smart%-splits%-bridge$'))
     table.insert(state.bridge_starts, argv)
     bridge_callbacks = opts
+    state.bridge_callbacks = opts
     return state.bridge_start_failure and -1 or #state.bridge_starts
   end
   vim.fn.jobstop = function(job)
@@ -116,6 +117,9 @@ function M.mock()
     end
     return {
       wait = function()
+        if state.nil_wait then
+          return nil
+        end
         if
           argv[2]:match('perform%-action')
           and argv[4]

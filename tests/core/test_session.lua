@@ -158,4 +158,19 @@ T['focus events are free once attached and claimed'] = function()
   eq(#state.calls, count)
 end
 
+T['suspending before attachment completes does not claim keys'] = function()
+  local state = mock()
+  local session = require('ghostty-smart-splits.session')
+  eq(session.activate(), true)
+  eq(#state.calls, 1) -- Lookup issued; its callback has not run yet.
+
+  vim.api.nvim_exec_autocmds('VimSuspend', {})
+  settle()
+  eq(#state.calls, 1) -- Nothing claimed while Neovim sits in the background.
+
+  vim.api.nvim_exec_autocmds('VimResume', {})
+  wait_for_calls(state, 2)
+  eq(state.calls[#state.calls][4], 'activate_key_table:nvim')
+end
+
 return T

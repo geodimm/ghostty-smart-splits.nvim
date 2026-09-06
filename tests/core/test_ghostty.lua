@@ -67,4 +67,18 @@ T['empty IDs and script failures fail closed'] = function()
   eq(state.warnings[1], 'ghostty-smart-splits: Automation denied')
 end
 
+-- vim.system():wait() is typed as always returning a result, but has been seen
+-- to return nil; that must not turn a failed action into a raised error.
+T['a missing system result fails closed rather than erroring'] = function()
+  local state = mock()
+  local ghostty = require('ghostty-smart-splits.ghostty')
+  eq(ghostty.attach(), true)
+  wait_for_calls(state, 1)
+  state.nil_wait = true
+  eq(ghostty.perform('goto_split:left'), false)
+  eq(ghostty.focused_terminal_id(), nil)
+  state.nil_wait = false
+  eq(ghostty.perform('goto_split:left'), true)
+end
+
 return T
