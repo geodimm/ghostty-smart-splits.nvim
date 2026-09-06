@@ -247,6 +247,9 @@ Run `:checkhealth ghostty-smart-splits` for local prerequisites. With v3,
 - macOS only. Action AppleScript calls are synchronous and time out after one second
 - The initial Ghostty terminal comes from the focused pane and the lookup is asynchronous;
   Later actions keep using that terminal instead of following focus changes.
+  A failed lookup is retried when Neovim next regains focus, so answering the
+  macOS Automation prompt recovers the session without restarting Neovim. After
+  five failures it stops trying and warns once.
 - Do not stack another Ghostty key table above this one while Neovim is active.
   If a crash or config reload leaves stale state, Ghostty's
   `deactivate_all_key_tables` action can recover it, but clears every table.
