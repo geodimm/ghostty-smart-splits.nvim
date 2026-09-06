@@ -1,7 +1,7 @@
 MINITEST_DIR ?= deps/mini.test
 SMART_SPLITS_DIR ?= deps/smart-splits.nvim
 SMART_SPLITS_V3_DIR ?= deps/smart-splits-v3.nvim
-SMART_SPLITS_V3_REF ?= 2996ec780adda7812a29f1bfc88eee05d2b49c45
+SMART_SPLITS_V3_REF ?= 23963901e8756cd5cf38b27f3d8bdf2fba7fc34f
 BENCH_ARGS ?=
 NVIM_LOG_FILE ?= /tmp/ghostty-smart-splits-nvim.log
 export NVIM_LOG_FILE
