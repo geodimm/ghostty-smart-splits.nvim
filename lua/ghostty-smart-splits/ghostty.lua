@@ -79,7 +79,7 @@ end
 -- Prefer the persistent bridge; fall back to osascript when it cannot answer.
 -- A bridge that reports an AppleScript failure fails closed rather than retrying.
 local function dispatch(request, script, ...)
-  if config.get_bridge() then
+  if config.bridge then
     local result, handled = bridge.request(request)
     if handled then
       return type(result) == 'string' and result or nil
@@ -115,7 +115,7 @@ function M.attach(callback)
     attaching = false
     if id and id ~= '' then
       terminal_id = id
-      if config.get_bridge() then
+      if config.bridge then
         bridge.start()
       end
     end

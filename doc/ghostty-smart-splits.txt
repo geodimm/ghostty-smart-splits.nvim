@@ -48,7 +48,8 @@ protocol may change before release.
 CONFIGURATION
 
 `key_table` is the name of the Ghostty key table used while Neovim is active.
-It defaults to `nvim` and must be a non-empty string.
+It defaults to `nvim` and must be a non-empty string. Changing it to a
+different name while it is claimed is an error; release it first.
 
 `bridge` is a boolean, default false. When true, actions and pane lookups
 prefer the persistent bridge and fall back to osascript when it is
@@ -68,9 +69,14 @@ Use the v2 root module or the v3 backend module, depending on the integration:
 <
 Configuration does not run AppleScript, start a bridge, attach to Ghostty, or
 register autocommands. Disabling the bridge stops an existing bridge immediately.
-Enabling it takes effect on the next attachment or action. Omitted options reset
-to defaults on each setup call. In v2, the root setup continues with attachment
-and activation; in v3, core activates the selected backend.
+Enabling it takes effect on the next attachment or action. In v2, the root
+setup continues with attachment and activation; in v3, core activates the
+selected backend.
+
+setup() merges over the current options: a call that names one option leaves
+the rest alone, so the bridge can be toggled at runtime without repeating
+key_table. An unknown option name is an error rather than a silent no-op.
+Call config.reset() to restore every default.
 
 In local measurements, bridge actions took about 30 ms versus about 130 ms
 through per-call osascript; results vary by machine.
@@ -96,6 +102,10 @@ three Ghostty requests. All three take the bridge when it is enabled.
 
 require('ghostty-smart-splits').claim_keys()
     Push the configured Ghostty key table if it is not already claimed.
+
+require('ghostty-smart-splits.config').reset()
+    Restore every option to its default. setup() merges rather than
+    replaces, so this is the only way back to the defaults.
 
 require('ghostty-smart-splits').release_keys()
     Pop the table claimed by this instance. Keys are also released on
