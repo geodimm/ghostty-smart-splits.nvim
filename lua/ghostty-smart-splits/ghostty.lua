@@ -1,5 +1,7 @@
 -- Ghostty operations shared by the smart-splits integration adapters.
 local M = {}
+local bridge = require('ghostty-smart-splits.bridge')
+local config = require('ghostty-smart-splits.config')
 local script_dir = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h:h:h') .. '/scripts/'
 local terminal_id
 
@@ -44,12 +46,21 @@ end
 -- Capture once. Actions must not follow focus into an unrelated terminal.
 function M.attach()
   terminal_id = terminal_id or M.focused_terminal_id()
+  if terminal_id and config.get_bridge() then
+    bridge.start()
+  end
   return terminal_id ~= nil
 end
 
 function M.perform(action)
-  if not terminal_id then
+  if not terminal_id or not M.detect() then
     return false
+  end
+  if config.get_bridge() then
+    local result, handled = bridge.request({ command = 'perform', terminalID = terminal_id, action = action })
+    if handled then
+      return result == 'true'
+    end
   end
   return run('perform-action', terminal_id, action) == 'true'
 end

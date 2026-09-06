@@ -16,6 +16,17 @@ function M.report()
   else
     vim.health.warn('osascript is unavailable')
   end
+  local bridge = require('ghostty-smart-splits.bridge').status()
+  if not require('ghostty-smart-splits.config').get_bridge() then
+    vim.health.info('bridge = false: actions use osascript')
+  elseif bridge.running then
+    vim.health.ok('bridge = true: persistent bridge is running')
+  elseif bridge.executable then
+    vim.health.info('bridge = true: binary is available; bridge is not running')
+  else
+    vim.health.warn('bridge = true: binary is missing; actions fall back to osascript. Run make bridge')
+  end
+  vim.health.info('Bridge path: ' .. bridge.path)
   if vim.env.TERM_PROGRAM == 'ghostty' then
     vim.health.ok('Running in Ghostty')
   else

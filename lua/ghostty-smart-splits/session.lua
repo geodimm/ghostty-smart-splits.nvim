@@ -1,4 +1,5 @@
 local M = {}
+local bridge = require('ghostty-smart-splits.bridge')
 local config = require('ghostty-smart-splits.config')
 local ghostty = require('ghostty-smart-splits.ghostty')
 local claimed = false
@@ -10,6 +11,9 @@ function M.configure(opts)
     error('Release the active key table before changing key_table')
   end
   config.setup(opts)
+  if not config.get_bridge() then
+    bridge.stop()
+  end
 end
 
 function M.claim_keys()
@@ -37,10 +41,17 @@ function M.activate()
       M.claim_keys()
     end,
   })
-  vim.api.nvim_create_autocmd({ 'VimLeavePre', 'VimSuspend' }, {
+  vim.api.nvim_create_autocmd('VimSuspend', {
     group = group,
     callback = function()
       M.release_keys()
+    end,
+  })
+  vim.api.nvim_create_autocmd('VimLeavePre', {
+    group = group,
+    callback = function()
+      M.release_keys()
+      bridge.stop()
     end,
   })
   M.claim_keys()

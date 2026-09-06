@@ -27,4 +27,22 @@ T['rejects invalid key tables'] = function()
   end
 end
 
+T['bridge defaults to false and rejects invalid values without changing config'] = function()
+  mock()
+  local config = require('ghostty-smart-splits.config')
+  eq(config.get_bridge(), false)
+  config.setup({ bridge = true, key_table = 'editor' })
+  eq(config.get_bridge(), true)
+  for _, value in ipairs({ 'false', 0, {} }) do
+    ---@diagnostic disable-next-line: assign-type-mismatch
+    local ok, message = pcall(config.setup, { bridge = value })
+    eq(ok, false)
+    assert(tostring(message):find('bridge must be a boolean', 1, true))
+    eq(config.get_bridge(), true)
+    eq(config.get_key_table(), 'editor')
+  end
+  config.setup()
+  eq(config.get_bridge(), false)
+end
+
 return T

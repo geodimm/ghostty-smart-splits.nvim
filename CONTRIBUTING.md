@@ -51,7 +51,54 @@ osacompile -o "$check_dir/perform-action.scpt" scripts/perform-action.applescrip
 osacompile -o "$check_dir/focused-terminal-id.scpt" scripts/focused-terminal-id.applescript
 ```
 
+## Bridge
+
+Build `bin/ghostty-smart-splits-bridge` with `make bridge` on macOS with
+Xcode Command Line Tools installed. Make rebuilds when the binary is missing
+or the Swift source or Makefile is newer. Use `make -B bridge` after a
+toolchain change.
+
+`bridge/main.swift` executes AppleScript requests. The Lua client in
+`lua/ghostty-smart-splits/bridge.lua` manages the process and JSON protocol.
+Each Neovim instance owns one bridge and stops it on exit. The initial terminal
+lookup uses `osascript`.
+
 ## Manual smoke test
+
+### Local latency benchmark
+
+Run from a shell in Ghostty at the repository root:
+
+```sh
+make bridge
+make bench
+```
+
+The benchmark creates a temporary right pane, alternates right/left actions,
+then closes that pane and restores focus. Avoid interacting with Ghostty
+during the run. Cleanup also runs on benchmark errors; a forced interruption
+or a setup/cleanup failure may leave the temporary pane open.
+
+By default, it measures 20 actions per transport after four warmup actions
+each. Output includes average, median, p95, range, speedup, and latency
+reduction. Failed responses abort the run with a nonzero exit status.
+
+Timings cover request/response round trips, including per-call `osascript`
+startup. Bridge startup and pane setup/cleanup are excluded. The benchmark
+runs in headless Neovim and does not measure keypress or rendering latency.
+
+For more samples or shareable results:
+
+```sh
+make bench BENCH_ARGS='--pairs 30 --json /tmp/ghostty-bench.json'
+```
+
+JSON includes raw timings and environment metadata. Use `--pairs` to set the
+measured pairs and `--warmup` to set warmup pairs per transport. Run on a quiet
+system. The benchmark requires a live Ghostty session and is excluded from
+`make check` and CI.
+
+### Navigation and lifecycle
 
 1. Add the example Ghostty bindings and reload the configuration.
 2. Start Neovim in the focused Ghostty pane, with a shell pane to its right.

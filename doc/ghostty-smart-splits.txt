@@ -46,19 +46,45 @@ protocol may change before release.
 
 CONFIGURATION
 
-The only backend option is `key_table`, the name of the Ghostty key table used
-while Neovim is active. It defaults to `nvim` and must be a non-empty string.
+`key_table` is the name of the Ghostty key table used while Neovim is active.
+It defaults to `nvim` and must be a non-empty string.
+
+`bridge` is a boolean, default false. When true, actions prefer the persistent
+bridge and fall back to osascript when it is unavailable. When false, actions
+use only osascript, even if the bridge binary exists.
+
 Use the v2 root module or the v3 backend module, depending on the integration:
 >
   -- v2
-  require('ghostty-smart-splits').setup({ key_table = 'editor' })
+  -- If navigation feels slow, build the bridge and set bridge = true.
+  require('ghostty-smart-splits').setup({ key_table = 'editor', bridge = false })
 
   -- v3: configure the backend before smart-splits setup.
-  require('smart-splits-backend-ghostty').setup({ key_table = 'editor' })
+  require('smart-splits-backend-ghostty').setup({
+    key_table = 'editor',
+    bridge = false, -- If navigation feels slow, build the bridge and set true.
+  })
 <
-The configuration step is side-effect-free: it does not run AppleScript,
-attach to Ghostty, or register autocommands. In v2, the root setup continues
-with attachment and activation; in v3, core activates the selected backend.
+Configuration does not run AppleScript, start a worker, attach to Ghostty, or
+register autocommands. Disabling the bridge stops an existing worker immediately.
+Enabling it takes effect on the next attachment or action. Omitted options reset
+to defaults on each setup call. In v2, the root setup continues with attachment
+and activation; in v3, core activates the selected backend.
+
+In local measurements, bridge actions took about 30 ms versus about 130 ms
+through per-call osascript; results vary by machine.
+
+The bridge is a persistent Swift process that reuses compiled AppleScript to
+reduce the overhead of sending actions to Ghostty.
+
+The optional bridge requires Xcode Command Line Tools. Build it from the
+plugin directory, then set bridge = true:
+>
+  make bridge
+<
+This creates bin/ghostty-smart-splits-bridge. A plugin manager can run this
+command on install/update; setup() never compiles it. Each Neovim instance owns
+one worker and stops it on exit. The initial terminal lookup uses osascript.
 
 ==============================================================================
 3. API                                             *ghostty-smart-splits-api*
@@ -71,8 +97,9 @@ require('ghostty-smart-splits').release_keys()
     VimSuspend and VimLeavePre, and claimed again on VimEnter and VimResume.
 
 :checkhealth ghostty-smart-splits
-    Check local prerequisites. With v3, :checkhealth smart-splits also
-    includes backend diagnostics.
+    Check local prerequisites, bridge preference, binary path, and running
+    status without starting the worker. With v3, :checkhealth smart-splits
+    also includes backend diagnostics.
 
 The underscore names ghostty_smart_splits and ghostty_smart_splits.health
 remain deprecated aliases for the dashed module and health names.
