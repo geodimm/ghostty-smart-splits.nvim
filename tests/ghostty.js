@@ -28,10 +28,13 @@ function run(argv) {
   }
   var term = terminal(argv[3]);
   if (operation === 'split') {
+    var directions = { right: 'GSrt', left: 'GSlf', down: 'GSdn', up: 'GSup' };
+    var direction = directions[argv[4]];
+    if (!direction) throw Error('Unknown split direction: ' + argv[4]);
     var params = {
-      '----': term, 'GSpd': D.descriptorWithEnumCode(code('GSrt'))
+      '----': term, 'GSpd': D.descriptorWithEnumCode(code(direction))
     };
-    if (argv[4]) params.GSpS = configuration(argv[4]);
+    if (argv[5]) params.GSpS = configuration(argv[5]);
     var created = send(pid, 'Ghst', 'Splt', params);
     return ObjC.unwrap(send(pid, 'core', 'getd', { '----': prop('ID  ', created) }).stringValue);
   }
