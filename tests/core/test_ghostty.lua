@@ -4,53 +4,51 @@ local mock = require('tests.helpers').mock
 
 T['unsupported sessions never launch osascript'] = function()
   local state = mock()
-  local mux = require('ghostty_smart_splits.mux')
+  local ghostty = require('ghostty-smart-splits.ghostty')
   state.linux = true
-  eq(mux.attach(), false)
-  eq(require('ghostty_smart_splits').setup(), false)
+  eq(ghostty.attach(), false)
   eq(#state.calls, 0)
   state.linux = false
   for _, name in ipairs({ 'SSH_CONNECTION', 'TMUX', 'ZELLIJ' }) do
     vim.env[name] = 'active'
-    eq(mux.is_in_session(), false)
+    eq(ghostty.detect(), false)
     vim.env[name] = nil
   end
   state.missing = true
-  eq(mux.is_in_session(), false)
+  eq(ghostty.detect(), false)
   state.missing = false
   vim.env.TERM_PROGRAM = 'other'
-  eq(mux.is_in_session(), false)
+  eq(ghostty.detect(), false)
 end
 
 T['actions are separate arguments and retain the captured terminal'] = function()
   local state = mock()
-  local mux = require('ghostty_smart_splits.mux')
-  eq(mux.perform('goto_split:left'), false)
-  eq(mux.attach(), true)
+  local ghostty = require('ghostty-smart-splits.ghostty')
+  eq(ghostty.perform('goto_split:left'), false)
+  eq(ghostty.attach(), true)
   state.id = 'terminal-2'
-  eq(mux.attach(), true)
-  eq(mux.current_pane_id(), 'terminal-2')
+  eq(ghostty.attach(), true)
+  eq(ghostty.focused_terminal_id(), 'terminal-2')
   local action = 'text:spaces "quotes" $shell'
-  eq(mux.perform(action), true)
+  eq(ghostty.perform(action), true)
   eq(vim.list_slice(state.calls[#state.calls], 3), { 'terminal-1', action })
-  eq(mux.resize_pane('left', 3), true)
+  eq(ghostty.resize('left', 3), true)
   eq(state.calls[#state.calls][4], 'resize_split:left,30')
-  eq(mux.split_pane('down'), true)
+  eq(ghostty.split('down'), true)
   eq(state.calls[#state.calls][4], 'new_split:down')
-  eq(require('smart-splits.mux.ghostty'), mux)
 end
 
 T['empty IDs and script failures fail closed'] = function()
   local state = mock()
-  local mux = require('ghostty_smart_splits.mux')
+  local ghostty = require('ghostty-smart-splits.ghostty')
   state.id = ''
-  eq(mux.attach(), false)
+  eq(ghostty.attach(), false)
   state.id = '  terminal-1\n'
-  eq(mux.attach(), true)
+  eq(ghostty.attach(), true)
   state.response = { code = 0, stdout = 'false' }
-  eq(mux.perform('goto_split:left'), false)
+  eq(ghostty.perform('goto_split:left'), false)
   state.response = { code = 1, stderr = 'Automation denied' }
-  eq(mux.perform('goto_split:left'), false)
+  eq(ghostty.perform('goto_split:left'), false)
   vim.wait(100, function()
     return #state.warnings > 0
   end)

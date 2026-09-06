@@ -17,7 +17,7 @@ T['health checks prerequisites without Apple Events'] = function()
       end
     end,
   })
-  require('ghostty_smart_splits.health').check()
+  require('ghostty-smart-splits.health').check()
   eq(#state.calls, 0)
   local warned = false
   for _, report in ipairs(reports) do
