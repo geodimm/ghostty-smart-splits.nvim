@@ -50,9 +50,9 @@ CONFIGURATION
 `key_table` is the name of the Ghostty key table used while Neovim is active.
 It defaults to `nvim` and must be a non-empty string.
 
-`bridge` is a boolean, default false. When true, actions prefer the persistent
-bridge and fall back to osascript when it is unavailable. When false, actions
-use only osascript, even if the bridge binary exists.
+`bridge` is a boolean, default false. When true, actions and pane lookups
+prefer the persistent bridge and fall back to osascript when it is
+unavailable. When false, both use only osascript, even if the binary exists.
 
 Use the v2 root module or the v3 backend module, depending on the integration:
 >
@@ -85,8 +85,11 @@ plugin directory, then set bridge = true:
 <
 This creates bin/ghostty-smart-splits-bridge. A plugin manager can run this
 command on install/update; setup() never compiles it. Each Neovim instance owns
-one bridge and stops it on exit. The initial terminal lookup uses osascript
-asynchronously.
+one bridge and stops it on exit. Only the initial terminal lookup uses
+osascript, asynchronously, before the bridge is running.
+
+smart-splits v2 brackets each pane move with a terminal lookup, so one move is
+three Ghostty requests. All three take the bridge when it is enabled.
 
 ==============================================================================
 3. API                                             *ghostty-smart-splits-api*

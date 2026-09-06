@@ -17,17 +17,22 @@ end
 M.detect = ghostty.detect
 M.activate = session.activate
 
-function M.move(direction, _opts)
-  -- Ghostty pane wrapping is unsupported. On false, core handles the fallback.
-  return ghostty.move(direction)
+-- Core delegates `at_edge` here and only handles it inside Neovim's layout when
+-- this returns false. Ghostty cannot wrap, so `wrap` is left to core; `split`
+-- becomes a Ghostty split, falling back to a Neovim one when Ghostty refuses.
+---@param opts? { at_edge?: 'stop'|'wrap'|'split' }
+function M.move(direction, opts)
+  if ghostty.move(direction) then
+    return true
+  end
+  if (opts or {}).at_edge == 'split' then
+    return ghostty.split(direction)
+  end
+  return false
 end
 
 function M.resize(direction, opts)
   return ghostty.resize(direction, (opts or {}).amount)
-end
-
-function M.split(direction, _opts)
-  return ghostty.split(direction)
 end
 
 function M.health()
