@@ -11,7 +11,22 @@ function M.mock()
     vim.env[key] = nil
   end
   vim.env.TERM_PROGRAM = 'ghostty'
-  local modules = { 'ghostty_smart_splits', 'ghostty_smart_splits.mux', 'smart-splits.mux.ghostty', 'smart-splits' }
+  local modules = {
+    'ghostty_smart_splits',
+    'ghostty_smart_splits.health',
+    'ghostty-smart-splits',
+    'ghostty-smart-splits.ghostty',
+    'ghostty-smart-splits.health',
+    'ghostty-smart-splits.session',
+    'smart-splits-backend-ghostty',
+    'smart-splits.mux.ghostty',
+    'smart-splits',
+  }
+  for name in pairs(package.loaded) do
+    if name:match('^smart%-splits%.') and name ~= 'smart-splits.mux.ghostty' then
+      table.insert(modules, name)
+    end
+  end
   local loaded = {}
   for _, name in ipairs(modules) do
     loaded[name] = package.loaded[name]
@@ -34,11 +49,17 @@ function M.mock()
   vim.notify_once = function(message)
     table.insert(state.warnings, message)
   end
-  vim.system = function(argv)
+  vim.system = function(argv, opts)
     table.insert(state.calls, argv)
+    state.system_opts = opts
+    if state.spawn_error then
+      error('osascript failed to start')
+    end
     assert(argv[1] == 'osascript')
     assert(vim.fn.filereadable(argv[2]) == 1)
-    local response = argv[2]:match('focused%-terminal%-id') and { code = 0, stdout = state.id } or state.response
+    local response = argv[2]:match('focused%-terminal%-id') and { code = 0, stdout = state.id }
+      or (state.responses or {})[argv[4]]
+      or state.response
     return {
       wait = function()
         if
@@ -62,6 +83,11 @@ function M.mock()
     vim.system, vim.fn.has, vim.fn.executable, vim.notify_once = saved.system, saved.has, saved.executable, saved.notify
     for _, key in ipairs({ 'TERM_PROGRAM', 'SSH_CONNECTION', 'TMUX', 'ZELLIJ' }) do
       vim.env[key] = env[key]
+    end
+    for name in pairs(package.loaded) do
+      if name:match('^smart%-splits%.') then
+        package.loaded[name] = nil
+      end
     end
     for _, name in ipairs(modules) do
       package.loaded[name] = loaded[name]

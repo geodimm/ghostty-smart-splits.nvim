@@ -23,11 +23,11 @@ Configure Ghostty's nvim key table using examples/ghostty.conf before startup.
   local splits = require('smart-splits')
   splits.setup({}) -- Your existing smart-splits options.
 
-  require('ghostty_smart_splits').setup({
+  require('ghostty-smart-splits').setup({
     key_table = 'nvim',
   })
 <
-Configure smart-splits normally, then call this plugin's setup() once at
+For smart-splits v2, configure smart-splits normally, then call setup() once at
 startup with the Neovim pane focused. Existing smart-splits options are
 preserved. setup() returns false on unsupported sessions or if the initial
 terminal lookup fails.
@@ -42,6 +42,43 @@ the existing configuration. Other smart-splits options remain unchanged.
 
 On unsupported sessions, the existing smart-splits configuration is unchanged.
 
+SMART-SPLITS V3 (EXPERIMENTAL)                  *ghostty-smart-splits-v3*
+
+Use smart-splits.nvim's v3 branch and select the separate backend interface:
+>
+  -- Optional: configure before smart-splits setup. This only stores options.
+  require('smart-splits-backend-ghostty').setup({ key_table = 'nvim' })
+  require('smart-splits').setup({
+    mux = { backend = 'smart-splits-backend-ghostty' },
+    move = { at_edge = 'stop' },
+  })
+<
+Omit the v2 root module's setup() call when using v3. Core calls activate() on
+the selected backend; it captures the focused terminal and manages the same
+key-table lifecycle as v2. Load at startup with Neovim's Ghostty pane focused.
+Backend options do not change the smart-splits configuration.
+
+For lazy.nvim dependency opts, set main='smart-splits-backend-ghostty' so that
+lazy calls the configuration-only setup(). See README.md for a complete spec.
+
+The v3 interface provides name, protocol_version=3, detect(), activate(),
+move(direction, opts), resize(direction, opts), split(direction, opts), and
+health(). detect() checks prerequisites without subprocesses. Operations return
+false when unattached or unavailable. resize() reads opts.amount (default 3)
+and converts to ten Ghostty units per cell, with a minimum of ten.
+
+Ghostty pane wrapping and zoom detection are not implemented. Failed moves use
+core's move.at_edge fallback. 'wrap' wraps inside Neovim; 'split' attempts a
+Ghostty split, then falls back to a Neovim split on failure.
+
+The prototype protocol may change before release. Tested against upstream v3
+commit 656cc50c07ba. :checkhealth smart-splits includes backend diagnostics.
+
+The v3 module is named smart-splits-backend-ghostty and ships in this same
+repository. Both the v2 mux adapter and v3 backend use
+ghostty-smart-splits.ghostty for operations and ghostty-smart-splits.session
+for the key-table lifecycle.
+
 ==============================================================================
 3. HOW IT WORKS                       *ghostty-smart-splits-how-it-works*
 
@@ -54,27 +91,42 @@ The plugin captures the focused Ghostty terminal when setup runs, activates a
 temporary key table while Neovim is active, and releases it when Neovim is
 suspended or exits. Unsupported platforms and terminals are left unchanged.
 
+In v2, multiplexer_integration='ghostty' loads smart-splits.mux.ghostty from
+this plugin's lua/smart-splits/mux/ghostty.lua through Neovim's runtime path.
+That file only exposes the adapter; loading it does not activate the session.
+The root ghostty-smart-splits.setup() call is still required for v2. In v3,
+core calls the selected backend's activate() hook instead.
+
 ==============================================================================
 4. API                                             *ghostty-smart-splits-api*
 
-require('ghostty_smart_splits').claim_keys()
+require('ghostty-smart-splits').claim_keys()
     Push the configured Ghostty key table if not already claimed.
     Returns whether this instance holds a claim.
 
-require('ghostty_smart_splits').release_keys()
+require('ghostty-smart-splits').release_keys()
     Pop one table if claimed. Returns whether the claim has been released.
     Called automatically on VimSuspend and VimLeavePre.
     VimEnter and VimResume claim keys again.
 
-:checkhealth ghostty_smart_splits
+:checkhealth ghostty-smart-splits
     Check prerequisites without sending Apple Events.
+
+The old ghostty_smart_splits spelling remains supported for the root and
+health modules, including :checkhealth ghostty_smart_splits. Each underscore
+module emits a deprecation warning once; use the dashed spelling for imports
+and :checkhealth instead. The underscore aliases are scheduled for removal
+when smart-splits v3 becomes the main release. Until then, both names return
+the same module instances and share terminal/key-table state.
 
 ==============================================================================
 5. LIMITATIONS                            *ghostty-smart-splits-limitations*
 
 This plugin supports only macOS; there is no Linux/D-Bus implementation.
-AppleScript is synchronous, so crossing an editor edge may have noticeable
-latency. Moving between ordinary Neovim splits does not launch a subprocess.
+AppleScript is synchronous, with a one-second timeout, so crossing an editor
+edge may have noticeable latency. Moving between ordinary Neovim splits does
+not launch a subprocess. If the initial Automation prompt times out, allow
+access and restart Neovim with its pane focused.
 
 Initial terminal association depends on focus. Later actions use the captured
 terminal ID and do not silently retarget after focus changes.

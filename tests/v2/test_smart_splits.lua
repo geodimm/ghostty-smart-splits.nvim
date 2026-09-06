@@ -8,7 +8,7 @@ T['real smart-splits loads the backend and forwards actions'] = function()
   splits.setup({ default_amount = 5 })
   eq(require('ghostty_smart_splits').setup(), true)
   local mux_api = require('smart-splits.mux')
-  eq(mux_api.get(), require('ghostty_smart_splits.mux'))
+  eq(mux_api.get(), require('smart-splits.mux.ghostty'))
   eq(require('smart-splits.config').at_edge, 'stop')
   eq(require('smart-splits.config').default_amount, 5)
   state.next_id = 'terminal-2'
