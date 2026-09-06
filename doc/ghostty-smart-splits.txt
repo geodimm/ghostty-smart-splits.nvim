@@ -29,7 +29,8 @@ Neovim pane focused:
 <
 The v2 setup preserves existing smart-splits options and sets
 `multiplexer_integration = 'ghostty'` and `at_edge = 'stop'`. It returns false
-when the session is unsupported or the focused terminal cannot be attached.
+when the session is unsupported; terminal attachment and key-table activation
+continue asynchronously after setup.
 
 SMART-SPLITS V3 (EXPERIMENTAL)
 
@@ -65,8 +66,8 @@ Use the v2 root module or the v3 backend module, depending on the integration:
     bridge = false, -- If navigation feels slow, build the bridge and set true.
   })
 <
-Configuration does not run AppleScript, start a worker, attach to Ghostty, or
-register autocommands. Disabling the bridge stops an existing worker immediately.
+Configuration does not run AppleScript, start a bridge, attach to Ghostty, or
+register autocommands. Disabling the bridge stops an existing bridge immediately.
 Enabling it takes effect on the next attachment or action. Omitted options reset
 to defaults on each setup call. In v2, the root setup continues with attachment
 and activation; in v3, core activates the selected backend.
@@ -84,7 +85,8 @@ plugin directory, then set bridge = true:
 <
 This creates bin/ghostty-smart-splits-bridge. A plugin manager can run this
 command on install/update; setup() never compiles it. Each Neovim instance owns
-one worker and stops it on exit. The initial terminal lookup uses osascript.
+one bridge and stops it on exit. The initial terminal lookup uses osascript
+asynchronously.
 
 ==============================================================================
 3. API                                             *ghostty-smart-splits-api*
@@ -98,7 +100,7 @@ require('ghostty-smart-splits').release_keys()
 
 :checkhealth ghostty-smart-splits
     Check local prerequisites, bridge preference, binary path, and running
-    status without starting the worker. With v3, :checkhealth smart-splits
+    status without starting the bridge. With v3, :checkhealth smart-splits
     also includes backend diagnostics.
 
 The underscore names ghostty_smart_splits and ghostty_smart_splits.health
@@ -107,9 +109,11 @@ remain deprecated aliases for the dashed module and health names.
 ==============================================================================
 4. LIMITATIONS                            *ghostty-smart-splits-limitations*
 
-macOS only. AppleScript calls are synchronous and time out after one second.
-The initial Ghostty terminal comes from the focused pane; later actions keep
-using that terminal instead of following focus changes.
+macOS only. Action AppleScript calls are synchronous and time out after one
+second.
+The initial Ghostty terminal comes from the focused pane and the lookup is
+asynchronous. Later actions keep using that terminal instead of following
+focus changes.
 
 Do not stack another Ghostty key table above this one while Neovim is active.
 If a crash or config reload leaves stale state, the Ghostty action

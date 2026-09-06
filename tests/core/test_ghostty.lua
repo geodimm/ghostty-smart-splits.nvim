@@ -2,6 +2,15 @@ local T = require('mini.test').new_set()
 local eq = require('mini.test').expect.equality
 local mock = require('tests.helpers').mock
 
+local function wait_for_calls(state, count)
+  assert(vim.wait(100, function()
+    return #state.calls >= count
+  end, 1))
+  vim.wait(10, function()
+    return false
+  end, 1)
+end
+
 T['unsupported sessions never launch osascript'] = function()
   local state = mock()
   local ghostty = require('ghostty-smart-splits.ghostty')
@@ -26,6 +35,7 @@ T['actions are separate arguments and retain the captured terminal'] = function(
   local ghostty = require('ghostty-smart-splits.ghostty')
   eq(ghostty.perform('goto_split:left'), false)
   eq(ghostty.attach(), true)
+  wait_for_calls(state, 1)
   state.id = 'terminal-2'
   eq(ghostty.attach(), true)
   eq(ghostty.focused_terminal_id(), 'terminal-2')
@@ -42,9 +52,11 @@ T['empty IDs and script failures fail closed'] = function()
   local state = mock()
   local ghostty = require('ghostty-smart-splits.ghostty')
   state.id = ''
-  eq(ghostty.attach(), false)
+  eq(ghostty.attach(), true)
+  wait_for_calls(state, 1)
   state.id = '  terminal-1\n'
   eq(ghostty.attach(), true)
+  wait_for_calls(state, 2)
   state.response = { code = 0, stdout = 'false' }
   eq(ghostty.perform('goto_split:left'), false)
   state.response = { code = 1, stderr = 'Automation denied' }

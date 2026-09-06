@@ -88,7 +88,7 @@ function M.mock()
     bridge_callbacks.on_stdout(job, { vim.json.encode(response), '' })
     return #data
   end
-  vim.system = function(argv, opts)
+  vim.system = function(argv, opts, on_exit)
     table.insert(state.calls, argv)
     state.system_opts = opts
     if state.spawn_error then
@@ -99,6 +99,9 @@ function M.mock()
     local response = argv[2]:match('focused%-terminal%-id') and { code = 0, stdout = state.id }
       or (state.responses or {})[argv[4]]
       or state.response
+    if on_exit then
+      on_exit(response)
+    end
     return {
       wait = function()
         if

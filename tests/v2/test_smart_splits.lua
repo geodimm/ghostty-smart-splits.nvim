@@ -1,12 +1,19 @@
 local T = require('mini.test').new_set()
 local eq = require('mini.test').expect.equality
 
+local function wait_for_calls(state, count)
+  assert(vim.wait(100, function()
+    return #state.calls >= count
+  end, 1))
+end
+
 T['real smart-splits loads the backend and forwards actions'] = function()
   local state = require('tests.helpers').mock()
   package.loaded['smart-splits'] = nil
   local splits = require('smart-splits')
   splits.setup({ default_amount = 5 })
   eq(require('ghostty_smart_splits').setup(), true)
+  wait_for_calls(state, 2)
   local mux_api = require('smart-splits.mux')
   eq(mux_api.get(), require('smart-splits.mux.ghostty'))
   eq(require('smart-splits.config').at_edge, 'stop')

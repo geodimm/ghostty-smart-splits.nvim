@@ -4,6 +4,8 @@ local bridge = require('ghostty-smart-splits.bridge')
 local config = require('ghostty-smart-splits.config')
 local script_dir = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h:h:h') .. '/scripts/'
 local terminal_id
+local attaching = false
+local attach_callbacks = {}
 
 function M.detect()
   return vim.env.TERM_PROGRAM == 'ghostty'
@@ -38,18 +40,80 @@ local function run(script, ...)
   return vim.trim(result.stdout or '')
 end
 
+local function report_error(result)
+  local message = vim.trim(result.stderr or '')
+  vim.schedule(function()
+    vim.notify_once(
+      'ghostty-smart-splits: ' .. (message ~= '' and message or 'AppleScript failed'),
+      vim.log.levels.WARN
+    )
+  end)
+end
+
+local function run_async(script, callback, ...)
+  if not M.detect() then
+    callback(nil)
+    return false
+  end
+  local argv = { 'osascript', script_dir .. script .. '.applescript', ... }
+  local ok, process = pcall(function()
+    return vim.system(argv, { text = true, timeout = 1000 }, function(result)
+      vim.schedule(function()
+        if result.code ~= 0 then
+          report_error(result)
+          callback(nil)
+        else
+          callback(vim.trim(result.stdout or ''))
+        end
+      end)
+    end)
+  end)
+  if not ok then
+    report_error({ stderr = tostring(process) })
+    callback(nil)
+    return false
+  end
+  return process ~= nil
+end
+
 function M.focused_terminal_id()
   local id = run('focused-terminal-id')
   return id and id ~= '' and id or nil
 end
 
 -- Capture once. Actions must not follow focus into an unrelated terminal.
-function M.attach()
-  terminal_id = terminal_id or M.focused_terminal_id()
-  if terminal_id and config.get_bridge() then
-    bridge.start()
+function M.attach(callback)
+  if terminal_id then
+    if callback then
+      callback(true)
+    end
+    return true
   end
-  return terminal_id ~= nil
+  if callback then
+    table.insert(attach_callbacks, callback)
+  end
+  if attaching then
+    return true
+  end
+  attaching = true
+  local started = run_async('focused-terminal-id', function(id)
+    attaching = false
+    if id and id ~= '' then
+      terminal_id = id
+      if config.get_bridge() then
+        bridge.start()
+      end
+    end
+    local callbacks = attach_callbacks
+    attach_callbacks = {}
+    for _, done in ipairs(callbacks) do
+      done(terminal_id ~= nil)
+    end
+  end)
+  if not started then
+    attaching = false
+  end
+  return started
 end
 
 function M.perform(action)

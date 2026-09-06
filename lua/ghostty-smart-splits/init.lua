@@ -14,9 +14,6 @@ function M.setup(opts)
   end
   session.configure(opts)
   local smart_splits = require('smart-splits')
-  if not ghostty.attach() then
-    return false
-  end
   smart_splits.setup({
     multiplexer_integration = 'ghostty',
     at_edge = 'stop',
