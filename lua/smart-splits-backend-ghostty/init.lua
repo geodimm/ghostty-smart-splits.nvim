@@ -4,7 +4,10 @@ local session = require('ghostty-smart-splits.session')
 local M = { name = 'ghostty', protocol_version = 3 }
 
 -- Configuration is inert: only the selected backend may attach or claim keys.
-M.setup = session.configure
+---@param opts? GhosttySmartSplitsConfig
+function M.setup(opts)
+  session.configure(opts)
+end
 M.detect = ghostty.detect
 M.activate = session.activate
 

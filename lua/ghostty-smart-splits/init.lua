@@ -6,6 +6,8 @@ M.claim_keys = session.claim_keys
 M.release_keys = session.release_keys
 
 ---Attach Ghostty and apply required smart-splits settings. False means unavailable.
+---@param opts? GhosttySmartSplitsConfig
+---@return boolean
 function M.setup(opts)
   if not ghostty.detect() then
     return false

@@ -15,6 +15,7 @@ function M.mock()
     'ghostty_smart_splits',
     'ghostty_smart_splits.health',
     'ghostty-smart-splits',
+    'ghostty-smart-splits.config',
     'ghostty-smart-splits.ghostty',
     'ghostty-smart-splits.health',
     'ghostty-smart-splits.session',

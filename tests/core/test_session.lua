@@ -38,4 +38,24 @@ T['custom tables and failed release retries'] = function()
   eq(session.release_keys(), true)
 end
 
+T['active tables cannot be changed until released'] = function()
+  local state = mock()
+  local session = require('ghostty-smart-splits.session')
+  local config = require('ghostty-smart-splits.config')
+  session.configure({ key_table = 'editor' })
+  session.activate()
+  local ok, message = pcall(session.configure, { key_table = 'other' })
+  eq(ok, false)
+  assert(type(message) == 'string')
+  eq(
+    message:match('Release the active key table before changing key_table$'),
+    'Release the active key table before changing key_table'
+  )
+  eq(config.get_key_table(), 'editor')
+  eq(session.release_keys(), true)
+  session.configure({ key_table = 'other' })
+  session.activate()
+  eq(state.calls[#state.calls][4], 'activate_key_table:other')
+end
+
 return T
