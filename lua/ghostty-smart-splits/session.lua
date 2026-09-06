@@ -9,18 +9,18 @@ local claim_generation = 0
 ---@param opts? GhosttySmartSplitsConfig
 function M.configure(opts)
   local name = config.resolve_key_table(opts)
-  if claimed and config.get_key_table() ~= name then
+  if claimed and config.key_table ~= name then
     error('Release the active key table before changing key_table')
   end
   config.setup(opts)
-  if not config.get_bridge() then
+  if not config.bridge then
     bridge.stop()
   end
 end
 
 function M.claim_keys()
   if not claimed then
-    claimed = ghostty.perform('activate_key_table:' .. config.get_key_table())
+    claimed = ghostty.perform('activate_key_table:' .. config.key_table)
   end
   return claimed
 end

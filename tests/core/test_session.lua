@@ -60,12 +60,37 @@ T['active tables cannot be changed until released'] = function()
     message:match('Release the active key table before changing key_table$'),
     'Release the active key table before changing key_table'
   )
-  eq(config.get_key_table(), 'editor')
+  eq(config.key_table, 'editor')
   eq(session.release_keys(), true)
   session.configure({ key_table = 'other' })
   session.activate()
   wait_for_calls(state, 4)
   eq(state.calls[#state.calls][4], 'activate_key_table:other')
+end
+
+-- The documented runtime toggle: changing bridge must not disturb a claimed
+-- key table, nor silently retarget it at the default.
+T['toggling the bridge leaves a claimed custom key table alone'] = function()
+  local state = mock()
+  local session = require('ghostty-smart-splits.session')
+  local config = require('ghostty-smart-splits.config')
+  session.configure({ key_table = 'editor' })
+  session.activate()
+  wait_for_calls(state, 2)
+  eq(state.calls[#state.calls][4], 'activate_key_table:editor')
+
+  session.configure({ bridge = true })
+  eq(config.key_table, 'editor')
+  eq(config.bridge, true)
+  session.configure({ bridge = false })
+  eq(config.key_table, 'editor')
+
+  -- Releasing and re-claiming still uses the table the caller chose.
+  eq(session.release_keys(), true)
+  session.configure({ slow_threshold = 200 })
+  eq(config.key_table, 'editor')
+  eq(session.claim_keys(), true)
+  eq(state.calls[#state.calls][4], 'activate_key_table:editor')
 end
 
 return T

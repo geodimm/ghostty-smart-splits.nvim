@@ -141,7 +141,7 @@ Both integrations accept the same backend options:
 | --- | --- | --- |
 | `key_table` | `'nvim'` | Ghostty key table used while Neovim is active. |
 | `bridge` | `false` | Use a persistent bridge for actions and pane lookups; fall back to `osascript` when unavailable. Set `false` to use only `osascript`. |
-| `slow_threshold` | `100` with the bridge, `150` without | Milliseconds before smart-splits v3 logs a slow-operation warning. Must be a positive integer. |
+| `slow_threshold` | `100` with the bridge, `150` without | Milliseconds before smart-splits v3 logs a slow-operation warning. Must be a positive integer. Follows `bridge` until you set it. |
 
 With v2, pass them to the plugin setup:
 
@@ -166,9 +166,14 @@ require('smart-splits').setup({
 })
 ```
 
-Each setup call resets omitted options to their defaults. Disabling the bridge
-stops an existing bridge immediately; enabling it starts one on the next
-attachment or action. Changing this option does not release the active key table.
+`setup` merges over the current options: a call that names one option leaves
+the rest alone, so the bridge can be toggled at runtime without repeating
+`key_table`. An unknown option name is an error rather than a silent no-op.
+Call `require('ghostty-smart-splits.config').reset()` to restore every default.
+
+Changing `key_table` to a different name while it is claimed is an error;
+release it first. Disabling the bridge stops an existing bridge immediately;
+enabling it starts one on the next attachment or action.
 
 Configure movement and resize mappings through smart-splits. The v2 setup adds
 `multiplexer_integration = 'ghostty'` and `at_edge = 'stop'`.
