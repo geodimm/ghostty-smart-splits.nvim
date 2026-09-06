@@ -37,6 +37,18 @@ must match both sets of Ghostty bindings in examples/ghostty.conf. The example
 uses Ctrl+h/j/k/l. Custom table names also require matching Ghostty
 configuration.
 
+If Alt+h/j/k/l are bound to native Ghostty resizing, also forward them in the
+nvim key table; otherwise Ghostty consumes them when another pane exists:
+>
+  keybind = nvim/alt+h=esc:h
+  keybind = nvim/alt+j=esc:j
+  keybind = nvim/alt+k=esc:k
+  keybind = nvim/alt+l=esc:l
+<
+Map the matching <A-h/j/k/l> keys to smart-splits resize functions in Neovim.
+See examples/ghostty.conf for the native resize bindings. Exit Neovim before
+reloading Ghostty's config, then restart it with its pane focused.
+
 The bridge applies multiplexer_integration='ghostty' and at_edge='stop' after
 the existing configuration. Other smart-splits options remain unchanged.
 
