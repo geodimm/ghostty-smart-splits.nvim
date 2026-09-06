@@ -1,12 +1,18 @@
 -- smart-splits v3 interface; transport and lifecycle are shared with v2.
+local config = require('ghostty-smart-splits.config')
 local ghostty = require('ghostty-smart-splits.ghostty')
 local session = require('ghostty-smart-splits.session')
-local M = { name = 'ghostty', protocol_version = 3 }
+local M = {
+  name = 'ghostty',
+  protocol_version = 3,
+  slow_threshold = config.get_slow_threshold(),
+}
 
 -- Configuration is inert: only the selected backend may attach or claim keys.
 ---@param opts? GhosttySmartSplitsConfig
 function M.setup(opts)
   session.configure(opts)
+  M.slow_threshold = config.get_slow_threshold()
 end
 M.detect = ghostty.detect
 M.activate = session.activate

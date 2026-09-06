@@ -45,4 +45,31 @@ T['bridge defaults to false and rejects invalid values without changing config']
   eq(config.get_bridge(), false)
 end
 
+T['slow threshold follows the transport and accepts a positive integer override'] = function()
+  mock()
+  local config = require('ghostty-smart-splits.config')
+  eq(config.get_slow_threshold(), 150)
+  config.setup({ bridge = true })
+  eq(config.get_slow_threshold(), 100)
+  config.setup({ bridge = false })
+  eq(config.get_slow_threshold(), 150)
+  config.setup({ slow_threshold = 200 })
+  eq(config.get_slow_threshold(), 200)
+end
+
+T['rejects invalid slow thresholds without changing config'] = function()
+  mock()
+  local config = require('ghostty-smart-splits.config')
+  config.setup({ bridge = true, key_table = 'editor', slow_threshold = 200 })
+  for _, value in ipairs({ 0, -1, 1.5, '200', false, {} }) do
+    ---@diagnostic disable-next-line: assign-type-mismatch
+    local ok, message = pcall(config.setup, { slow_threshold = value })
+    eq(ok, false)
+    assert(tostring(message):find('slow_threshold must be a positive integer', 1, true))
+    eq(config.get_bridge(), true)
+    eq(config.get_key_table(), 'editor')
+    eq(config.get_slow_threshold(), 200)
+  end
+end
+
 return T
