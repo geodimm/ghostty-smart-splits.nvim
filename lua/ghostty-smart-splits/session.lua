@@ -1,23 +1,20 @@
 local M = {}
+local config = require('ghostty-smart-splits.config')
 local ghostty = require('ghostty-smart-splits.ghostty')
 local claimed = false
-local key_table = 'nvim'
 
+---@param opts? GhosttySmartSplitsConfig
 function M.configure(opts)
-  local name = (opts or {}).key_table
-  if name == nil then
-    name = 'nvim'
-  end
-  assert(type(name) == 'string' and name ~= '', 'key_table must be a non-empty string')
-  if claimed and key_table ~= name then
+  local name = config.resolve_key_table(opts)
+  if claimed and config.get_key_table() ~= name then
     error('Release the active key table before changing key_table')
   end
-  key_table = name
+  config.setup(opts)
 end
 
 function M.claim_keys()
   if not claimed then
-    claimed = ghostty.perform('activate_key_table:' .. key_table)
+    claimed = ghostty.perform('activate_key_table:' .. config.get_key_table())
   end
   return claimed
 end
