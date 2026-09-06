@@ -8,10 +8,15 @@
     "library": [
       "$VIMRUNTIME/lua",
       "${3rd}/luv/library"
+    ],
+    "ignoreDir": [
+      "tests"
     ]
   },
   "diagnostics": {
-    "globals": ["vim"],
+    "globals": [
+      "vim"
+    ],
     "libraryFiles": "Disable"
   }
 }

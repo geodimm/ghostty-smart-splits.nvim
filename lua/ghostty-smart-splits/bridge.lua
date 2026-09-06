@@ -1,4 +1,4 @@
--- Persistent AppleScript process and newline-delimited JSON transport.
+-- Persistent Ghostty automation process and newline-delimited JSON transport.
 local M = {}
 local root = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h:h:h')
 local binary_path = root .. '/bin/ghostty-smart-splits-bridge'
@@ -115,6 +115,15 @@ function M.request(request)
     return nil, false
   end
   return response.result, true
+end
+
+---Return the bridge to its initial state, including the fields `stop()` keeps
+---so `status()` stays meaningful across a restart. Tests call this instead of
+---dropping the module from `package.loaded`.
+function M.reset()
+  M.stop()
+  last_exit = nil
+  in_flight = false
 end
 
 function M.status()

@@ -1,0 +1,11 @@
+-- Focused unit/failure tests. Real application workflows use make test-e2e.
+return {
+  _all = {
+    lua = 'nlua',
+    helper = 'tests/init.lua',
+    pattern = '_spec',
+    output = 'gtest',
+  },
+  default = { ROOT = { 'tests/core' } },
+  core = { ROOT = { 'tests/core' } },
+}
