@@ -182,7 +182,7 @@ The preferred module and health names use dashes:
 `ghostty-smart-splits` and `:checkhealth ghostty-smart-splits`. The old
 underscore names remain as deprecated aliases for now.
 
-In local measurements, bridge actions took about 30 ms versus about 130 ms
+In local measurements, bridge actions took about 15 ms versus about 110 ms
 through per-call `osascript`; results vary by machine.
 The v3 warning threshold is therefore raised to 150 ms when the bridge is off.
 If your machine is slower and you are comfortable with the latency, increase
@@ -190,8 +190,9 @@ If your machine is slower and you are comfortable with the latency, increase
 
 ### Optional bridge
 
-The bridge is a persistent Swift process that reuses compiled AppleScript to reduce the overhead of talking to Ghostty.
-Every request goes through it, including the pane lookups smart-splits v2 makes before and after each move.
+The bridge is a persistent Swift process that reuses JavaScript for Automation handlers to reduce the overhead of talking to Ghostty.
+Both transports address the Ghostty process that owns Neovim, so separate Ghostty instances can run alongside each other.
+Every request goes through the bridge when enabled, including the pane lookups smart-splits v2 makes before and after each move.
 
 If navigation feels slow, try enabling the bridge. With Xcode Command Line Tools installed,
 run this from the plugin directory, then set `bridge = true`:

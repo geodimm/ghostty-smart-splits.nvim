@@ -1,5 +1,4 @@
--- One suite per task: each needs a different smart-splits checkout on the
--- runtimepath, so they cannot share a process. See the Makefile.
+-- Focused unit/failure tests. Real application workflows use make test-e2e.
 return {
   _all = {
     lua = 'nlua',
@@ -7,8 +6,6 @@ return {
     pattern = '_spec',
     output = 'gtest',
   },
-  default = { ROOT = { 'tests' } },
+  default = { ROOT = { 'tests/core' } },
   core = { ROOT = { 'tests/core' } },
-  v2 = { ROOT = { 'tests/v2' } },
-  v3 = { ROOT = { 'tests/v3' } },
 }

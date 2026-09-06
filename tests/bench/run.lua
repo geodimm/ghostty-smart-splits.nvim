@@ -31,7 +31,7 @@ end
 
 local function osascript(script, ...)
   local result = vim
-    .system({ 'osascript', root .. '/' .. script .. '.applescript', ... }, {
+    .system({ 'osascript', '-l', 'JavaScript', root .. '/' .. script .. '.js', ... }, {
       text = true,
       timeout = timeout,
     })
@@ -40,15 +40,19 @@ local function osascript(script, ...)
   return vim.trim(result.stdout or '')
 end
 
+local function pane(operation, ...)
+  return osascript('tests/ghostty', root .. '/scripts/ghostty.js', 'owner', operation, ...)
+end
+
 local function focused()
-  local id = osascript('scripts/focused-terminal-id')
+  local id = osascript('scripts/ghostty', 'focused-terminal-id')
   assert(id ~= '', 'Ghostty returned an empty terminal ID')
   return id
 end
 
 local function source_action(id, action)
   assert(
-    osascript('scripts/perform-action', id, action) == 'true',
+    osascript('scripts/ghostty', 'perform-action', id, action) == 'true',
     action .. ' was not performed; check the pane layout'
   )
 end
@@ -96,10 +100,10 @@ local function main()
   assert(vim.fn.executable(bridge_path) == 1, 'bridge is missing; run make bridge first')
   print('Creating a temporary Ghostty pane on the right. Avoid interacting with Ghostty until finished.')
   original_id = focused()
-  created_id = osascript('tests/bench/pane', 'split', original_id)
+  created_id = pane('split', original_id)
   assert(created_id ~= '' and created_id ~= original_id, 'Ghostty did not return a new terminal ID')
   local left, right = original_id, created_id
-  osascript('tests/bench/pane', 'focus', left)
+  pane('focus', left)
   source_action(left, 'goto_split:right')
   assert(focused() == right, 'right navigation did not focus the temporary pane')
   source_action(right, 'goto_split:left')
@@ -162,7 +166,7 @@ if worker then
 end
 local cleanup_errors = {}
 local function cleanup(operation, id, ...)
-  local cleaned, message = pcall(osascript, 'tests/bench/pane', operation, id, ...)
+  local cleaned, message = pcall(pane, operation, id, ...)
   if not cleaned then
     cleanup_errors[#cleanup_errors + 1] = operation .. ' ' .. id .. ': ' .. tostring(message)
   end

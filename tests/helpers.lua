@@ -16,24 +16,14 @@ function M.restore()
   teardown = {}
 end
 
--- Our own modules keep their state in file locals and expose `reset()`, so they
--- stay loaded and keep their identity across tests. Only two things still need
--- the module cache cleared: the deprecation shims, whose warning fires at
--- require time, and upstream smart-splits, which is third-party state.
+-- Reset the state used by failure-path tests between cases.
 local OWN_MODULES = {
   'ghostty-smart-splits.bridge',
   'ghostty-smart-splits.config',
   'ghostty-smart-splits.ghostty',
   'ghostty-smart-splits.session',
 }
-local SHIM_MODULES = { 'ghostty_smart_splits', 'ghostty_smart_splits.health' }
 local ENV_KEYS = { 'TERM_PROGRAM', 'SSH_CONNECTION', 'TMUX', 'ZELLIJ' }
-
----`smart-splits.mux.ghostty` lives in this repo and only binds functions from
----the ghostty module, whose identity is now stable, so it is kept.
-local function is_upstream_smart_splits(name)
-  return name:match('^smart%-splits%.') ~= nil and name ~= 'smart-splits.mux.ghostty'
-end
 
 local function reset_plugin()
   for _, name in ipairs(OWN_MODULES) do
@@ -48,7 +38,7 @@ local function reset_plugin()
 end
 
 ---Install the Ghostty test double and return its recording state. Every
----patched global, environment variable and module is undone by `restore()`.
+---patched global and environment variable is undone by `restore()`.
 function M.mock()
   reset_plugin()
   local state = {
@@ -67,29 +57,6 @@ function M.mock()
     vim.env[key] = nil
   end
   vim.env.TERM_PROGRAM = 'ghostty'
-
-  -- Names are tracked in a list rather than as table keys: a module that was
-  -- not loaded before the case has a nil value, which a table would drop, and
-  -- the restore below would then leave it loaded.
-  local unloaded_names = { 'smart-splits' }
-  for _, name in ipairs(SHIM_MODULES) do
-    table.insert(unloaded_names, name)
-  end
-  for name in pairs(package.loaded) do
-    if is_upstream_smart_splits(name) then
-      table.insert(unloaded_names, name)
-    end
-  end
-  local unloaded = {}
-  for _, name in ipairs(unloaded_names) do
-    unloaded[name] = package.loaded[name]
-    package.loaded[name] = nil
-  end
-  package.loaded['smart-splits'] = {
-    setup = function(opts)
-      state.config = vim.tbl_deep_extend('force', state.config or {}, opts)
-    end,
-  }
 
   M.stub(vim.fn, 'has', function(feature)
     if feature == 'macunix' then
@@ -124,16 +91,6 @@ function M.mock()
     local response = state.bridge_response
       or (request.command == 'focused-terminal-id' and { ok = true, result = state.id })
       or { ok = true, result = 'true' }
-    -- Mirror the osascript mock: a successful move lands in the next terminal.
-    if
-      request.command == 'perform'
-      and (request.action or ''):match('^goto_split:')
-      and response.ok
-      and response.result == 'true'
-      and state.next_id
-    then
-      state.id = state.next_id
-    end
     bridge_callbacks.on_stdout(job, { vim.json.encode(response), '' })
     return #data
   end)
@@ -144,9 +101,9 @@ function M.mock()
       error('osascript failed to start')
     end
     assert(argv[1] == 'osascript')
-    assert(vim.fn.filereadable(argv[2]) == 1)
-    local response = argv[2]:match('focused%-terminal%-id') and { code = 0, stdout = state.id }
-      or (state.responses or {})[argv[4]]
+    assert(vim.fn.filereadable(argv[4]) == 1)
+    local response = argv[5] == 'focused-terminal-id' and { code = 0, stdout = state.id }
+      or (state.responses or {})[argv[7]]
       or state.response
     if on_exit then
       on_exit(response)
@@ -155,16 +112,6 @@ function M.mock()
       wait = function()
         if state.nil_wait then
           return nil
-        end
-        if
-          argv[2]:match('perform%-action')
-          and argv[4]
-          and argv[4]:match('^goto_split:')
-          and response.code == 0
-          and vim.trim(response.stdout or '') == 'true'
-          and state.next_id
-        then
-          state.id = state.next_id
         end
         return response
       end,
@@ -179,14 +126,6 @@ function M.mock()
     reset_plugin()
     for _, key in ipairs(ENV_KEYS) do
       vim.env[key] = env[key]
-    end
-    for name in pairs(package.loaded) do
-      if is_upstream_smart_splits(name) then
-        package.loaded[name] = nil
-      end
-    end
-    for _, name in ipairs(unloaded_names) do
-      package.loaded[name] = unloaded[name]
     end
     vim.cmd('silent! only!')
   end)
@@ -233,53 +172,19 @@ function M.wait_for_calls(state, count)
   )
 end
 
----@param state table
----@param count integer
-function M.wait_for_requests(state, count)
-  assert(
-    vim.wait(100, function()
-      return #state.bridge_requests >= count
-    end, 1),
-    ('expected %d bridge requests, saw %d'):format(count, #state.bridge_requests)
-  )
-end
-
 ---The Ghostty action from the most recent osascript call.
 ---@param state table
 ---@return string?
 function M.last_action(state)
   local call = state.calls[#state.calls]
-  return call and call[4]
-end
-
----Every Ghostty action seen so far, in order.
----@param state table
----@return string[]
-function M.actions(state)
-  return vim.tbl_map(function(call)
-    return call[4]
-  end, state.calls)
+  return call and call[7]
 end
 
 ---The target of the most recent osascript call, as `{ terminal_id, action }`.
 ---@param state table
 ---@return table
 function M.last_target(state)
-  return vim.list_slice(state.calls[#state.calls], 3)
-end
-
----The basename of the AppleScript behind the most recent osascript call.
----@param state table
----@return string?
-function M.last_script(state)
-  local call = state.calls[#state.calls]
-  return call and call[2]:match('[^/]+$')
-end
-
----@param state table
----@return table?
-function M.last_request(state)
-  return state.bridge_requests[#state.bridge_requests]
+  return vim.list_slice(state.calls[#state.calls], 6)
 end
 
 return M

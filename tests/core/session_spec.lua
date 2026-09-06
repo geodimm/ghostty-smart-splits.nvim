@@ -4,30 +4,6 @@ local mock = h.mock
 describe('session', function()
   after_each(h.restore)
 
-  -- Attach callbacks land on the event loop, so give them a turn to run.
-  it('lifecycle events push once and pop once across repeated resumes', function()
-    local state = mock()
-    local session = require('ghostty-smart-splits.session')
-    session.activate()
-    session.activate()
-    assert.are.equal(1, #state.calls)
-    for _ = 1, 2 do
-      vim.api.nvim_exec_autocmds('VimEnter', {})
-      h.wait_for_calls(state, 2)
-      assert.are.equal('activate_key_table:nvim', h.last_action(state))
-      vim.api.nvim_exec_autocmds('VimSuspend', {})
-      assert.are.equal('deactivate_key_table', h.last_action(state))
-      local count = #state.calls
-      session.release_keys()
-      assert.are.same(count, #state.calls)
-      vim.api.nvim_exec_autocmds('VimResume', {})
-      h.wait_for_calls(state, count + 1)
-      assert.are.equal('activate_key_table:nvim', h.last_action(state))
-    end
-    vim.api.nvim_exec_autocmds('VimLeavePre', {})
-    assert.are.equal('deactivate_key_table', h.last_action(state))
-  end)
-
   it('custom tables and failed release retries', function()
     local state = mock()
     local session = require('ghostty-smart-splits.session')
@@ -65,33 +41,6 @@ describe('session', function()
     assert.are.equal('activate_key_table:other', h.last_action(state))
   end)
 
-  -- The documented runtime toggle: changing bridge must not disturb a claimed
-  -- key table, nor silently retarget it at the default.
-  it('toggling the bridge leaves a claimed custom key table alone', function()
-    local state = mock()
-    local session = require('ghostty-smart-splits.session')
-    local config = require('ghostty-smart-splits.config')
-    session.configure({ key_table = 'editor' })
-    session.activate()
-    h.wait_for_calls(state, 2)
-    assert.are.equal('activate_key_table:editor', h.last_action(state))
-
-    session.configure({ bridge = true })
-    assert.are.equal('editor', config.key_table)
-    assert.is_true(config.bridge)
-    session.configure({ bridge = false })
-    assert.are.equal('editor', config.key_table)
-
-    -- Releasing and re-claiming still uses the table the caller chose.
-    assert.is_true(session.release_keys())
-    session.configure({ slow_threshold = 200 })
-    assert.are.equal('editor', config.key_table)
-    assert.is_true(session.claim_keys())
-    assert.are.equal('activate_key_table:editor', h.last_action(state))
-  end)
-
-  -- The macOS Automation prompt times out the first lookup, so a session that
-  -- gives up there is dead until Neovim restarts.
   it('a failed attachment recovers when Neovim regains focus', function()
     local state = mock()
     local session = require('ghostty-smart-splits.session')
@@ -132,20 +81,6 @@ describe('session', function()
       'ghostty-smart-splits: could not reach Ghostty; see :checkhealth ghostty-smart-splits',
       state.warnings[#state.warnings]
     )
-  end)
-
-  -- Regaining focus while attached must not cost an Apple Event.
-  it('focus events are free once attached and claimed', function()
-    local state = mock()
-    local session = require('ghostty-smart-splits.session')
-    assert.is_true(session.activate())
-    h.wait_for_calls(state, 2)
-    local count = #state.calls
-    for _ = 1, 3 do
-      vim.api.nvim_exec_autocmds('FocusGained', {})
-      h.settle()
-    end
-    assert.are.same(count, #state.calls)
   end)
 
   it('suspending before attachment completes does not claim keys', function()

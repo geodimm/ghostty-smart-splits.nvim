@@ -3,6 +3,7 @@ local bridge = require('ghostty-smart-splits.bridge')
 local config = require('ghostty-smart-splits.config')
 local ghostty = require('ghostty-smart-splits.ghostty')
 local claimed = false
+local claim_pending = false
 local active = false
 local claim_generation = 0
 local attach_failures = 0
@@ -24,8 +25,12 @@ function M.configure(opts)
 end
 
 function M.claim_keys()
-  if not claimed then
+  -- VimResume and FocusGained can overlap while the transport pumps events.
+  -- Share the pending claim instead of sending a second activation via fallback.
+  if not claimed and not claim_pending then
+    claim_pending = true
     claimed = ghostty.perform('activate_key_table:' .. config.key_table)
+    claim_pending = false
   end
   return claimed
 end
@@ -131,6 +136,7 @@ end
 ---before the reset sees a stale generation and does nothing.
 function M.reset()
   claimed = false
+  claim_pending = false
   active = false
   claim_generation = claim_generation + 1
   attach_failures = 0

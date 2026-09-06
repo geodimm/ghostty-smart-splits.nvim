@@ -1,6 +1,7 @@
 import Carbon
 import Darwin
 import Foundation
+import OSAKit
 
 private struct Request: Decodable {
     let command: String
@@ -22,74 +23,31 @@ private struct Response: Encodable {
     }
 }
 
-private let focusedTerminalScript = """
-on focusedTerminalID()
-    tell application "Ghostty"
-        return id of focused terminal of selected tab of front window
-    end tell
-end focusedTerminalID
-"""
-
-private let performActionScript = """
-on performAction(terminalIdentifier, actionIdentifier)
-    tell application "Ghostty"
-        set targetTerminal to first terminal whose id is terminalIdentifier
-        return perform action actionIdentifier on targetTerminal
-    end tell
-end performAction
-"""
-
 private enum BridgeError: LocalizedError {
     case invalidRequest
-    case appleScript(String)
+    case automation(String)
     case missingResult
 
     var errorDescription: String? {
         switch self {
         case .invalidRequest:
             "Invalid bridge request"
-        case let .appleScript(message):
+        case let .automation(message):
             message
         case .missingResult:
-            "AppleScript returned no result"
+            "Ghostty automation returned no result"
         }
     }
 }
 
-private func makeHandlerEvent(handler: String, arguments: [String]) -> NSAppleEventDescriptor {
-    let event = NSAppleEventDescriptor(
-        eventClass: AEEventClass(kASAppleScriptSuite),
-        eventID: AEEventID(kASSubroutineEvent),
-        targetDescriptor: nil,
-        returnID: AEReturnID(kAutoGenerateReturnID),
-        transactionID: AETransactionID(kAnyTransactionID)
-    )
-    event.setDescriptor(
-        NSAppleEventDescriptor(string: handler),
-        forKeyword: AEKeyword(keyASSubroutineName)
-    )
-
-    let argumentList = NSAppleEventDescriptor(listDescriptor: ())
-    for argument in arguments {
-        // Index zero appends to an Apple Event list.
-        argumentList.insert(NSAppleEventDescriptor(string: argument), at: 0)
-    }
-    event.setDescriptor(argumentList, forKeyword: AEKeyword(keyDirectObject))
-    return event
-}
-
-private func execute(_ script: NSAppleScript, handler: String, arguments: [String]) throws -> String {
+private func execute(_ script: OSAScript, handler: String, arguments: [String]) throws -> String {
     var error: NSDictionary?
-    let result = script.executeAppleEvent(
-        makeHandlerEvent(handler: handler, arguments: arguments),
-        error: &error
-    )
-        as NSAppleEventDescriptor?
+    let result = script.executeHandler(withName: handler, arguments: arguments, error: &error)
     guard let result else {
-        throw BridgeError.appleScript(error?.description ?? "AppleScript execution failed")
+        throw BridgeError.automation(error?.description ?? "Ghostty automation failed")
     }
     if let scriptError = error {
-        throw BridgeError.appleScript(scriptError.description)
+        throw BridgeError.automation(scriptError.description)
     }
 
     if result.descriptorType == typeBoolean {
@@ -111,12 +69,17 @@ private func write(_ response: Response) {
     }
 }
 
-guard let focusedTerminalScript = NSAppleScript(source: focusedTerminalScript),
-      let performActionScript = NSAppleScript(source: performActionScript)
+// The CLI and bridge share the same implementation and owning-process lookup.
+let scriptURL = URL(fileURLWithPath: CommandLine.arguments[0])
+    .deletingLastPathComponent().deletingLastPathComponent()
+    .appendingPathComponent("scripts/ghostty.js")
+guard let source = try? String(contentsOf: scriptURL, encoding: .utf8),
+      let language = OSALanguage(forName: "JavaScript")
 else {
-    fputs("ghostty-smart-splits-bridge: failed to compile AppleScript\n", stderr)
+    fputs("ghostty-smart-splits-bridge: could not load scripts/ghostty.js\n", stderr)
     exit(EXIT_FAILURE)
 }
+let script = OSAScript(source: source, language: language)
 
 let decoder = JSONDecoder()
 while let line = readLine(strippingNewline: true) {
@@ -131,13 +94,13 @@ while let line = readLine(strippingNewline: true) {
         let result: String
         switch request.command {
         case "focused-terminal-id":
-            result = try execute(focusedTerminalScript, handler: "focusedTerminalID", arguments: [])
+            result = try execute(script, handler: "focusedTerminalID", arguments: [])
         case "perform":
             guard let terminalID = request.terminalID, let action = request.action else {
                 throw BridgeError.invalidRequest
             }
             result = try execute(
-                performActionScript,
+                script,
                 handler: "performAction",
                 arguments: [terminalID, action]
             )

@@ -30,7 +30,7 @@ local function run(script, ...)
   if not M.detect() then
     return nil
   end
-  local argv = { 'osascript', script_dir .. script .. '.applescript', ... }
+  local argv = { 'osascript', '-l', 'JavaScript', script_dir .. 'ghostty.js', script, ... }
   local ok, result = pcall(function()
     return vim.system(argv, { text = true, timeout = 1000 }):wait()
   end)
@@ -51,7 +51,7 @@ local function run_async(script, callback, ...)
     callback(nil)
     return false
   end
-  local argv = { 'osascript', script_dir .. script .. '.applescript', ... }
+  local argv = { 'osascript', '-l', 'JavaScript', script_dir .. 'ghostty.js', script, ... }
   local ok, err = pcall(function()
     vim.system(argv, { text = true, timeout = 1000 }, function(result)
       vim.schedule(function()

@@ -1,26 +1,20 @@
-local h = require('tests.helpers')
-local mock = h.mock
+local config = require('ghostty-smart-splits.config')
 
 describe('config', function()
-  after_each(h.restore)
+  before_each(config.reset)
+  after_each(config.reset)
 
   it('uses the default key table', function()
-    mock()
-    local config = require('ghostty-smart-splits.config')
     config.setup()
     assert.are.equal('nvim', config.key_table)
   end)
 
   it('accepts a custom key table', function()
-    mock()
-    local config = require('ghostty-smart-splits.config')
     config.setup({ key_table = 'editor' })
     assert.are.equal('editor', config.key_table)
   end)
 
   it('rejects invalid key tables', function()
-    mock()
-    local config = require('ghostty-smart-splits.config')
     for _, value in ipairs({ '', 1, false }) do
       local ok, message = pcall(config.setup, { key_table = value })
       assert.is_false(ok)
@@ -30,8 +24,6 @@ describe('config', function()
   end)
 
   it('bridge defaults to false and rejects invalid values without changing config', function()
-    mock()
-    local config = require('ghostty-smart-splits.config')
     assert.is_false(config.bridge)
     config.setup({ bridge = true, key_table = 'editor' })
     assert.is_true(config.bridge)
@@ -48,8 +40,6 @@ describe('config', function()
   end)
 
   it('slow threshold follows the transport and accepts a positive integer override', function()
-    mock()
-    local config = require('ghostty-smart-splits.config')
     assert.are.equal(150, config.slow_threshold)
     config.setup({ bridge = true })
     assert.are.equal(100, config.slow_threshold)
@@ -64,8 +54,6 @@ describe('config', function()
   end)
 
   it('rejects invalid slow thresholds without changing config', function()
-    mock()
-    local config = require('ghostty-smart-splits.config')
     config.setup({ bridge = true, key_table = 'editor', slow_threshold = 200 })
     for _, value in ipairs({ 0, -1, 1.5, '200', false, {} }) do
       ---@diagnostic disable-next-line: assign-type-mismatch
@@ -79,8 +67,6 @@ describe('config', function()
   end)
 
   it('setup merges over the current options and reset restores defaults', function()
-    mock()
-    local config = require('ghostty-smart-splits.config')
     config.setup({ key_table = 'editor', bridge = true, slow_threshold = 200 })
 
     -- Naming one option leaves the rest alone, however many calls it takes.
@@ -108,8 +94,6 @@ describe('config', function()
   end)
 
   it('unknown options are rejected instead of silently dropped', function()
-    mock()
-    local config = require('ghostty-smart-splits.config')
     config.setup({ key_table = 'editor' })
     for _, opts in ipairs({ { bridge_enabled = true }, { keytable = 'x' }, { slowThreshold = 200 } }) do
       local ok, message = pcall(config.setup, opts)

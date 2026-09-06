@@ -1,4 +1,4 @@
--- Persistent AppleScript process and newline-delimited JSON transport.
+-- Persistent Ghostty automation process and newline-delimited JSON transport.
 local M = {}
 local root = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h:h:h')
 local binary_path = root .. '/bin/ghostty-smart-splits-bridge'

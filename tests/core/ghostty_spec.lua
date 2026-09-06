@@ -23,25 +23,6 @@ describe('ghostty', function()
     assert.is_false(ghostty.detect())
   end)
 
-  it('actions are separate arguments and retain the captured terminal', function()
-    local state = mock()
-    local ghostty = require('ghostty-smart-splits.ghostty')
-    assert.is_false(ghostty.perform('goto_split:left'))
-    assert.is_true(ghostty.attach())
-    h.wait_for_calls(state, 1)
-    h.settle(10)
-    state.id = 'terminal-2'
-    assert.is_true(ghostty.attach())
-    assert.are.equal('terminal-2', ghostty.focused_terminal_id())
-    local action = 'text:spaces "quotes" $shell'
-    assert.is_true(ghostty.perform(action))
-    assert.are.same({ 'terminal-1', action }, h.last_target(state))
-    assert.is_true(ghostty.resize('left', 3))
-    assert.are.equal('resize_split:left,30', h.last_action(state))
-    assert.is_true(ghostty.split('down'))
-    assert.are.equal('new_split:down', h.last_action(state))
-  end)
-
   it('empty IDs and script failures fail closed', function()
     local state = mock()
     local ghostty = require('ghostty-smart-splits.ghostty')
@@ -63,8 +44,6 @@ describe('ghostty', function()
     assert.are.equal('ghostty-smart-splits: Automation denied', state.warnings[1])
   end)
 
-  -- vim.system():wait() is typed as always returning a result, but has been seen
-  -- to return nil; that must not turn a failed action into a raised error.
   it('a missing system result fails closed rather than erroring', function()
     local state = mock()
     local ghostty = require('ghostty-smart-splits.ghostty')
@@ -76,5 +55,7 @@ describe('ghostty', function()
     assert.is_nil(ghostty.focused_terminal_id())
     state.nil_wait = false
     assert.is_true(ghostty.perform('goto_split:left'))
+    state.spawn_error = true
+    assert.is_false(ghostty.perform('goto_split:left'))
   end)
 end)

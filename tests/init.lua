@@ -3,9 +3,6 @@
 -- `-u` init script the runner used before.
 local root = vim.fn.getcwd()
 vim.opt.runtimepath:prepend(root)
-if vim.env.SMART_SPLITS_DIR and vim.env.SMART_SPLITS_DIR ~= '' then
-  vim.opt.runtimepath:append(vim.env.SMART_SPLITS_DIR)
-end
 -- `tests/` is not on the runtimepath, so `require('tests.helpers')` resolves
 -- through package.path instead.
 package.path = table.concat({ root .. '/?.lua', root .. '/?/init.lua', package.path }, ';')
