@@ -13,7 +13,6 @@ https://github.com/user-attachments/assets/774b72c1-acd5-48fa-9b03-406f2cc740ab
 ## Requirements
 
 - Neovim 0.11+, smart-splits.nvim, and Ghostty 1.3+ on macOS.
-- Neovim running locally inside Ghostty.
 - Ghostty AppleScript enabled (the default) and macOS Automation permission.
 
 ## Installation
@@ -136,12 +135,38 @@ The keys in Neovim and Ghostty must match.
 
 ## Configuration
 
-The v2 setup uses the `nvim` Ghostty key table by default and preserves your
-smart-splits options. To use another table:
+Both integrations accept the same backend options:
+
+| Option | Default | Behavior |
+| --- | --- | --- |
+| `key_table` | `'nvim'` | Ghostty key table used while Neovim is active. |
+| `bridge` | `false` | Use a persistent bridge for actions; fall back to `osascript` when unavailable. Set `false` to use only `osascript`. |
+
+With v2, pass them to the plugin setup:
 
 ```lua
-require('ghostty-smart-splits').setup({ key_table = 'editor' })
+require('ghostty-smart-splits').setup({
+  key_table = 'nvim',
+  bridge = false, -- If navigation feels slow, build the bridge and set true.
+})
 ```
+
+With v3, configure the backend **before** smart-splits selects and activates it:
+
+```lua
+require('smart-splits-backend-ghostty').setup({
+  key_table = 'nvim',
+  bridge = false, -- If navigation feels slow, build the bridge and set true.
+})
+require('smart-splits').setup({
+  mux = { backend = 'smart-splits-backend-ghostty' },
+  move = { at_edge = 'stop' },
+})
+```
+
+Each setup call resets omitted options to their defaults. Disabling the bridge
+stops an existing worker immediately; enabling it starts one on the next
+attachment or action. Changing this option does not release the active key table.
 
 Configure movement and resize mappings through smart-splits. The v2 setup adds
 `multiplexer_integration = 'ghostty'` and `at_edge = 'stop'`.
@@ -149,6 +174,43 @@ Configure movement and resize mappings through smart-splits. The v2 setup adds
 The preferred module and health names use dashes:
 `ghostty-smart-splits` and `:checkhealth ghostty-smart-splits`. The old
 underscore names remain as deprecated aliases for now.
+
+In local measurements, bridge actions took about 30 ms versus about 130 ms
+through per-call `osascript`; results vary by machine.
+
+### Optional bridge
+
+The bridge is a persistent Swift process that reuses compiled AppleScript to reduce the overhead of sending actions to Ghostty.
+
+If navigation feels slow, try enabling the bridge. With Xcode Command Line Tools installed,
+run this from the plugin directory, then set `bridge = true`:
+
+```sh
+make bridge
+```
+
+To rebuild on install/update with lazy.nvim, use this dependency spec:
+
+```lua
+{ 'geodimm/ghostty-smart-splits.nvim', build = 'make bridge' }
+```
+
+With vim.pack, register this hook before `vim.pack.add()`:
+
+```lua
+vim.api.nvim_create_autocmd('PackChanged', {
+  callback = function(ev)
+    local d = ev.data
+    if d.spec.name == 'ghostty-smart-splits.nvim'
+      and (d.kind == 'install' or d.kind == 'update') then
+      local r = vim.system({ 'make', 'bridge' }, { cwd = d.path, text = true }):wait()
+      assert(r.code == 0, r.stderr or 'bridge build failed')
+    end
+  end,
+})
+```
+
+Run `make bench` to benchmark locally.
 
 ## How it works
 

@@ -28,4 +28,40 @@ T['health checks prerequisites without Apple Events'] = function()
   eq(warned, true)
 end
 
+T['health reports bridge preference and availability without starting it'] = function()
+  local state = require('tests.helpers').mock()
+  local original = vim.health
+  MiniTest.finally(function()
+    vim.health = original
+  end)
+  local reports
+  vim.health = setmetatable({}, {
+    __index = function(_, level)
+      return function(message)
+        table.insert(reports, { level, message })
+      end
+    end,
+  })
+  local function check(expected_level, expected_message)
+    reports = {}
+    require('ghostty-smart-splits.health').check()
+    local found = false
+    for _, report in ipairs(reports) do
+      if report[1] == expected_level and report[2]:find(expected_message, 1, true) then
+        found = true
+      end
+    end
+    eq(found, true)
+    eq(#state.bridge_starts, 0)
+    eq(#state.calls, 0)
+  end
+  check('info', 'bridge = false: actions use osascript')
+  require('smart-splits-backend-ghostty').setup({ bridge = true })
+  check('warn', 'bridge = true: binary is missing')
+  state.bridge_available = true
+  check('info', 'bridge = true: binary is available')
+  require('smart-splits-backend-ghostty').setup({ bridge = false })
+  check('info', 'bridge = false: actions use osascript')
+end
+
 return T

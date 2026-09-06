@@ -43,6 +43,7 @@ deps/
 .tmp/
 doc/tags
 *.scpt
+/bin/
 
 # This shared CI configuration must not be hidden by a global Git ignore.
 !.luarc.json

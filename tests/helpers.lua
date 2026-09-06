@@ -3,8 +3,24 @@ local M = {}
 local MiniTest = require('mini.test')
 
 function M.mock()
-  local state = { calls = {}, warnings = {}, response = { code = 0, stdout = 'true' }, id = 'terminal-1' }
-  local saved = { system = vim.system, has = vim.fn.has, executable = vim.fn.executable, notify = vim.notify_once }
+  local state = {
+    calls = {},
+    warnings = {},
+    response = { code = 0, stdout = 'true' },
+    id = 'terminal-1',
+    bridge_starts = {},
+    bridge_requests = {},
+    bridge_stops = {},
+  }
+  local saved = {
+    system = vim.system,
+    has = vim.fn.has,
+    executable = vim.fn.executable,
+    notify = vim.notify_once,
+    jobstart = vim.fn.jobstart,
+    jobstop = vim.fn.jobstop,
+    chansend = vim.fn.chansend,
+  }
   local env = {}
   for _, key in ipairs({ 'TERM_PROGRAM', 'SSH_CONNECTION', 'TMUX', 'ZELLIJ' }) do
     env[key] = vim.env[key]
@@ -16,6 +32,7 @@ function M.mock()
     'ghostty_smart_splits.health',
     'ghostty-smart-splits',
     'ghostty-smart-splits.config',
+    'ghostty-smart-splits.bridge',
     'ghostty-smart-splits.ghostty',
     'ghostty-smart-splits.health',
     'ghostty-smart-splits.session',
@@ -45,10 +62,31 @@ function M.mock()
     return saved.has(feature)
   end
   vim.fn.executable = function(name)
+    if name:match('ghostty%-smart%-splits%-bridge$') then
+      return state.bridge_available and 1 or 0
+    end
     return name == 'osascript' and (state.missing and 0 or 1) or saved.executable(name)
   end
   vim.notify_once = function(message)
     table.insert(state.warnings, message)
+  end
+  local bridge_callbacks
+  vim.fn.jobstart = function(argv, opts)
+    assert(argv[1]:match('ghostty%-smart%-splits%-bridge$'))
+    table.insert(state.bridge_starts, argv)
+    bridge_callbacks = opts
+    return state.bridge_start_failure and -1 or #state.bridge_starts
+  end
+  vim.fn.jobstop = function(job)
+    table.insert(state.bridge_stops, job)
+    return 1
+  end
+  vim.fn.chansend = function(job, data)
+    local request = vim.json.decode(data)
+    table.insert(state.bridge_requests, request)
+    local response = state.bridge_response or { ok = true, result = 'true' }
+    bridge_callbacks.on_stdout(job, { vim.json.encode(response), '' })
+    return #data
   end
   vim.system = function(argv, opts)
     table.insert(state.calls, argv)
@@ -82,6 +120,7 @@ function M.mock()
       return false
     end)
     vim.system, vim.fn.has, vim.fn.executable, vim.notify_once = saved.system, saved.has, saved.executable, saved.notify
+    vim.fn.jobstart, vim.fn.jobstop, vim.fn.chansend = saved.jobstart, saved.jobstop, saved.chansend
     for _, key in ipairs({ 'TERM_PROGRAM', 'SSH_CONNECTION', 'TMUX', 'ZELLIJ' }) do
       vim.env[key] = env[key]
     end
