@@ -19,7 +19,7 @@ Instead, use GitHub's **Report a vulnerability** feature under the repository's 
 
 Please include, where applicable:
 
-- the affected ghostty-smart-splits.nvim version or commit;
+- the affected backend-ghostty version or commit;
 - the Neovim, Ghostty, and macOS versions;
 - the relevant plugin and Ghostty key-table configuration;
 - steps or a minimal configuration that reproduces the issue;

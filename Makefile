@@ -3,7 +3,7 @@ BUSTED ?= busted
 BUSTED_ARGS ?=
 SMART_SPLITS_DIR ?= deps/smart-splits.nvim
 SMART_SPLITS_V3_DIR ?= deps/smart-splits-v3.nvim
-SMART_SPLITS_V3_REF ?= 23963901e8756cd5cf38b27f3d8bdf2fba7fc34f
+SMART_SPLITS_V3_REF ?= v3
 BENCH_ARGS ?=
 TEST_STATE_HOME ?= /tmp/ghostty-smart-splits.nvim
 NVIM_LOG_FILE ?= /tmp/ghostty-smart-splits-nvim.log
@@ -68,9 +68,9 @@ test-core:
 
 $(SMART_SPLITS_DIR):
 	mkdir -p "$(dir $(SMART_SPLITS_DIR))"
-	git clone --filter=blob:none https://github.com/mrjones2014/smart-splits.nvim "$@"
+	git clone --filter=blob:none https://github.com/smart-splits-nvim/smart-splits.nvim "$@"
 
 $(SMART_SPLITS_V3_DIR):
 	mkdir -p "$(dir $(SMART_SPLITS_V3_DIR))"
-	git clone --filter=blob:none --no-checkout https://github.com/mrjones2014/smart-splits.nvim "$@"
+	git clone --filter=blob:none --no-checkout https://github.com/smart-splits-nvim/smart-splits.nvim "$@"
 	git -C "$@" checkout --quiet "$(SMART_SPLITS_V3_REF)"

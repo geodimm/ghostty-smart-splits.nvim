@@ -38,7 +38,7 @@ function M.report()
   if pcall(require, 'smart-splits') then
     vim.health.ok('smart-splits.nvim is available')
   else
-    vim.health.error('Install mrjones2014/smart-splits.nvim')
+    vim.health.error('Install smart-splits-nvim/smart-splits.nvim')
   end
   vim.health.info(
     'Enable Ghostty AppleScript, configure the nvim key table, and allow macOS Automation access (see README)'
@@ -47,7 +47,7 @@ function M.report()
 end
 
 function M.check()
-  vim.health.start('ghostty-smart-splits.nvim')
+  vim.health.start('backend-ghostty')
   M.report()
 end
 
