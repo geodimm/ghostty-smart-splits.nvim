@@ -127,4 +127,44 @@ T['the focused terminal lookup prefers the bridge and falls back to osascript'] 
   eq(#state.calls, 2)
 end
 
+-- request() blocks in vim.wait, which pumps the event loop, so a scheduled
+-- callback can land here while a request is outstanding.
+T['a nested bridge request falls back instead of stealing the reply'] = function()
+  local state = mock()
+  state.bridge_available = true
+  local bridge = require('ghostty-smart-splits.bridge')
+  local outer_send = vim.fn.chansend
+  local nested_result, nested_handled
+  local depth = 0
+  vim.fn.chansend = function(job, data)
+    depth = depth + 1
+    if depth == 1 then
+      nested_result, nested_handled = bridge.request({ command = 'perform', terminalID = 't', action = 'nested' })
+    end
+    return outer_send(job, data)
+  end
+
+  local result, handled = bridge.request({ command = 'perform', terminalID = 't', action = 'goto_split:left' })
+  eq(nested_handled, false) -- Nested caller is told to use osascript.
+  eq(nested_result, nil)
+  eq(handled, true) -- Outer caller still gets its own reply.
+  eq(result, 'true')
+  eq(#state.bridge_requests, 1) -- Only the outer request reached the pipe.
+end
+
+T['a burst of bridge output does not desynchronise the next request'] = function()
+  local state = mock()
+  state.bridge_available = true
+  local bridge = require('ghostty-smart-splits.bridge')
+  eq(bridge.request({ command = 'focused-terminal-id' }), 'terminal-1')
+
+  -- Two whole replies plus a partial one, all in a single stdout event.
+  local stale = vim.json.encode({ ok = true, result = 'stale' })
+  state.bridge_callbacks.on_stdout(1, { stale, stale, '{"ok":true,"resu' })
+
+  local result, handled = bridge.request({ command = 'perform', terminalID = 't', action = 'goto_split:left' })
+  eq(handled, true)
+  eq(result, 'true')
+end
+
 return T
