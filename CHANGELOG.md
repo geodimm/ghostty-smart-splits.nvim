@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.1](https://github.com/geodimm/ghostty-smart-splits.nvim/compare/v0.4.0...v0.4.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* harden the transports and fix suspend-time key claims ([#20](https://github.com/geodimm/ghostty-smart-splits.nvim/issues/20)) ([92e61d2](https://github.com/geodimm/ghostty-smart-splits.nvim/commit/92e61d25cccab9df528936c4104e0971a5d97b4c))
+* retry Ghostty attachment when Neovim regains focus ([#19](https://github.com/geodimm/ghostty-smart-splits.nvim/issues/19)) ([880739e](https://github.com/geodimm/ghostty-smart-splits.nvim/commit/880739eb0587698604e33e53d01f927066ec1f64))
+
+
+### Performance Improvements
+
+* route pane lookups through the Ghostty bridge ([#16](https://github.com/geodimm/ghostty-smart-splits.nvim/issues/16)) ([2b4d542](https://github.com/geodimm/ghostty-smart-splits.nvim/commit/2b4d54239ed6e4cff9e79ca5d430f840adbb9c9d))
+
 ## [0.4.0](https://github.com/geodimm/ghostty-smart-splits.nvim/compare/v0.3.1...v0.4.0) (2026-09-06)
 
 
