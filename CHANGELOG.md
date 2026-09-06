@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/geodimm/ghostty-smart-splits.nvim/compare/v0.3.0...v0.3.1) (2026-09-06)
+
+
+### Performance Improvements
+
+* make Ghostty attachment asynchronous ([#12](https://github.com/geodimm/ghostty-smart-splits.nvim/issues/12)) ([59e4975](https://github.com/geodimm/ghostty-smart-splits.nvim/commit/59e4975df5b8d7fb1157bd3350f737ea0a76a8eb))
+
 ## [0.3.0](https://github.com/geodimm/ghostty-smart-splits.nvim/compare/v0.2.0...v0.3.0) (2026-09-06)
 
 
