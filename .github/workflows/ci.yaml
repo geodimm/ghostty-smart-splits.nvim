@@ -86,7 +86,7 @@ jobs:
       # LuaJIT cannot parse the public LuaRocks manifest (65,536 constant limit).
       # Use PUC Lua 5.1 for installation; nlua still runs tests in Neovim's
       # LuaJIT, which can load these Lua 5.1 modules.
-      - uses: leafo/gh-actions-lua@v11
+      - uses: leafo/gh-actions-lua@v13
         with:
           luaVersion: '5.1.5'
 
